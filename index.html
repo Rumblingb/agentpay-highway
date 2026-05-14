@@ -4,486 +4,539 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>AgentPay Highway — Governed AI Agent Economy</title>
-<meta name="description" content="Drive the AgentPay Highway. 61 products. Governed payment middleware for AI agents. Built by agents, for agents — and playable by both humans and AI.">
-<meta property="og:title" content="AgentPay Highway">
-<meta property="og:description" content="A cyberpunk highway through the governed agent economy. Playable by humans AND AI agents.">
+<meta name="description" content="Drive the AgentPay Highway. 61 products. 10-mile cyberpunk journey through the governed agent economy. Playable by humans AND AI agents.">
+<meta property="og:title" content="AgentPay Highway — Cyberpunk Portfolio Game">
+<meta property="og:description" content="A 10-mile cyberpunk highway through the governed agent economy. Built by agents, playable by agents.">
+<meta property="og:image" content="https://rumblingb.github.io/agentpay-highway/og.png">
 <meta property="og:type" content="website">
+<meta name="twitter:card" content="summary_large_image">
 <style>
   :root {
-    --void: #06060f;
-    --asphalt: #111122;
-    --neon-cyan: #00f0ff;
-    --neon-pink: #ff2d95;
-    --neon-amber: #ffb800;
-    --text: #c8c8e0;
-    --text-dim: #6a6a8a;
+    --void: #06060f; --asphalt: #111122;
+    --cyan: #00f0ff; --pink: #ff2d95; --amber: #ffb800;
+    --green: #00ff88; --text: #c8c8e0; --dim: #6a6a8a;
   }
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{background:var(--void);overflow:hidden;font-family:'Courier New',monospace;cursor:none;user-select:none;-webkit-user-select:none}
+  canvas{display:block;position:fixed;top:0;left:0;z-index:0}
   
-  * { margin: 0; padding: 0; box-sizing: border-box; }
+  #hud{position:fixed;z-index:10;pointer-events:none;width:100%;height:100%}
   
-  body {
-    background: var(--void);
-    overflow: hidden;
-    font-family: 'Courier New', monospace;
-    cursor: none;
-    user-select: none;
-    -webkit-user-select: none;
-  }
+  #speedometer{position:absolute;bottom:30px;right:30px;color:var(--cyan);font-size:12px;text-shadow:0 0 10px var(--cyan);text-align:right}
+  #speedometer .val{font-size:42px;font-weight:bold}
+  #speedometer .unit{font-size:12px;opacity:.7}
   
-  canvas { display: block; position: fixed; top: 0; left: 0; z-index: 0; }
+  #mini-map{position:absolute;bottom:30px;left:30px;width:120px;height:20px;border:1px solid var(--dim);background:rgba(6,6,15,.8)}
+  #mini-map-fill{height:100%;background:var(--cyan);box-shadow:0 0 8px var(--cyan);width:0%;transition:width .3s}
+  #mini-map-label{position:absolute;bottom:55px;left:30px;color:var(--dim);font-size:10px}
   
-  /* HUD Overlay */
-  #hud {
-    position: fixed;
-    z-index: 10;
-    pointer-events: none;
-    width: 100%;
-    height: 100%;
-  }
+  #mile-marker{position:absolute;top:30px;left:50%;transform:translateX(-50%);color:var(--amber);font-size:12px;text-shadow:0 0 8px var(--amber);text-align:center}
+  #mile-marker .mile{font-size:52px;font-weight:bold;line-height:1}
   
-  #speedometer {
-    position: absolute;
-    bottom: 30px;
-    right: 30px;
-    color: var(--neon-cyan);
-    font-size: 14px;
-    text-shadow: 0 0 10px var(--neon-cyan);
-    text-align: right;
-  }
-  #speedometer .val { font-size: 48px; font-weight: bold; }
-  #speedometer .unit { font-size: 14px; opacity: 0.7; }
+  #zone-name{position:absolute;top:115px;left:50%;transform:translateX(-50%);color:var(--pink);font-size:16px;text-shadow:0 0 12px var(--pink);opacity:0;transition:opacity .3s;text-align:center;max-width:90vw}
+  #zone-msg{position:absolute;top:145px;left:50%;transform:translateX(-50%);color:var(--text);font-size:12px;opacity:0;transition:opacity .3s;text-align:center;max-width:80vw}
   
-  #mile-marker {
-    position: absolute;
-    top: 30px;
-    left: 50%;
-    transform: translateX(-50%);
-    color: var(--neon-amber);
-    font-size: 14px;
-    text-shadow: 0 0 8px var(--neon-amber);
-    text-align: center;
-  }
-  #mile-marker .mile { font-size: 56px; font-weight: bold; line-height: 1; }
+  #easter-egg{position:absolute;top:200px;left:50%;transform:translateX(-50%);color:var(--green);font-size:14px;text-shadow:0 0 15px var(--green);opacity:0;transition:opacity 1s;text-align:center}
   
-  #zone-name {
-    position: absolute;
-    top: 120px;
-    left: 50%;
-    transform: translateX(-50%);
-    color: var(--neon-pink);
-    font-size: 18px;
-    text-shadow: 0 0 12px var(--neon-pink);
-    opacity: 0;
-    transition: opacity 0.5s;
-  }
+  #glitch-overlay{position:fixed;inset:0;z-index:50;pointer-events:none;opacity:0;background:rgba(255,45,149,.05)}
   
-  /* Start Screen */
-  #start-screen {
-    position: fixed;
-    z-index: 100;
-    inset: 0;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    background: var(--void);
-    cursor: pointer;
-  }
-  #start-screen h1 {
-    font-family: 'Courier New', monospace;
-    font-size: clamp(24px, 5vw, 48px);
-    color: var(--neon-cyan);
-    text-shadow: 0 0 20px var(--neon-cyan), 0 0 40px var(--neon-cyan);
-    text-align: center;
-    margin-bottom: 10px;
-  }
-  #start-screen .sub {
-    color: var(--text-dim);
-    font-size: 14px;
-    margin-bottom: 40px;
-    text-align: center;
-  }
-  #start-screen .start-btn {
-    color: var(--neon-pink);
-    font-size: 20px;
-    text-shadow: 0 0 10px var(--neon-pink);
-    animation: pulse 1.5s infinite;
-  }
-  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
+  #start-screen{position:fixed;z-index:100;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;background:var(--void);cursor:pointer}
+  #start-screen h1{font-family:'Courier New',monospace;font-size:clamp(20px,5vw,44px);color:var(--cyan);text-shadow:0 0 20px var(--cyan),0 0 40px var(--cyan);text-align:center;margin-bottom:8px}
+  #start-screen .sub{color:var(--dim);font-size:13px;margin-bottom:30px;text-align:center;padding:0 20px}
+  #start-screen .start-btn{color:var(--pink);font-size:18px;text-shadow:0 0 10px var(--pink);animation:pulse 1.5s infinite}
+  #start-screen .kbd{color:var(--dim);font-size:10px;margin-top:30px;text-align:center;line-height:1.8}
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
   
-  /* Billboard CTAs */
-  .billboard-cta {
-    position: absolute;
-    pointer-events: all;
-    color: var(--neon-cyan);
-    border: 1px solid var(--neon-cyan);
-    padding: 8px 20px;
-    font-size: 14px;
-    text-shadow: 0 0 8px var(--neon-cyan);
-    box-shadow: 0 0 15px rgba(0,240,255,0.3);
-    background: rgba(0,240,255,0.05);
-    cursor: pointer;
-    display: none;
-    text-decoration: none;
-  }
-  .billboard-cta:hover {
-    background: rgba(0,240,255,0.2);
-    box-shadow: 0 0 30px rgba(0,240,255,0.6);
-  }
+  .billboard-cta{position:absolute;pointer-events:all;color:var(--cyan);border:1px solid var(--cyan);padding:8px 20px;font-size:13px;text-shadow:0 0 8px var(--cyan);box-shadow:0 0 15px rgba(0,240,255,.3);background:rgba(0,240,255,.05);cursor:pointer;display:none;text-decoration:none;transition:all .2s}
+  .billboard-cta:hover{background:rgba(0,240,255,.2);box-shadow:0 0 30px rgba(0,240,255,.6);transform:scale(1.05)}
+  .billboard-cta.pink{color:var(--pink);border-color:var(--pink);text-shadow:0 0 8px var(--pink);box-shadow:0 0 15px rgba(255,45,149,.3);background:rgba(255,45,149,.05)}
+  .billboard-cta.pink:hover{background:rgba(255,45,149,.2);box-shadow:0 0 30px rgba(255,45,149,.6)}
+  .billboard-cta.amber{color:var(--amber);border-color:var(--amber);text-shadow:0 0 8px var(--amber);box-shadow:0 0 15px rgba(255,184,0,.3);background:rgba(255,184,0,.05)}
   
-  #audio-toggle {
-    position: fixed;
-    bottom: 30px;
-    left: 30px;
-    z-index: 11;
-    pointer-events: all;
-    color: var(--text-dim);
-    font-size: 12px;
-    background: none;
-    border: 1px solid var(--text-dim);
-    padding: 5px 12px;
-    cursor: pointer;
-  }
+  #audio-toggle{position:fixed;bottom:30px;left:160px;z-index:11;pointer-events:all;color:var(--dim);font-size:11px;background:none;border:1px solid var(--dim);padding:5px 12px;cursor:pointer;transition:all .2s}
+  #audio-toggle:hover{color:var(--cyan);border-color:var(--cyan)}
   
-  /* Agent Layer (hidden from humans, readable by machines) */
-  #agent-layer {
-    display: none;
-  }
+  #konami-indicator{position:fixed;bottom:60px;left:50%;transform:translateX(-50%);z-index:11;color:var(--green);font-size:12px;opacity:0;transition:opacity .5s;text-shadow:0 0 10px var(--green)}
   
-  @media (max-width: 768px) {
-    #speedometer { bottom: 20px; right: 20px; }
-    #speedometer .val { font-size: 32px; }
-    #mile-marker .mile { font-size: 40px; }
-    #start-screen h1 { font-size: 22px; }
+  #agent-layer{display:none}
+  
+  @media(max-width:768px){
+    #speedometer{bottom:20px;right:20px}#speedometer .val{font-size:28px}
+    #mile-marker .mile{font-size:36px}#mini-map{display:none}#mini-map-label{display:none}
+    #zone-name{font-size:13px}#zone-msg{font-size:10px}
+    #start-screen h1{font-size:18px}.billboard-cta{padding:6px 14px;font-size:11px}
   }
 </style>
 </head>
 <body>
 
-<!-- START SCREEN -->
-<div id="start-screen" onclick="startGame()" onkeydown="if(event.key==='Enter')startGame()">
+<div id="start-screen" onclick="startGame()">
   <h1>⬡ AGENTPAY HIGHWAY</h1>
-  <div class="sub">A cyberpunk journey through the governed agent economy</div>
+  <div class="sub">10-mile cyberpunk journey through the governed agent economy<br>Playable by humans. Readable by AI agents.</div>
   <div class="start-btn">[ PRESS ENTER OR TAP TO DRIVE ]</div>
+  <div class="kbd">
+    ↑ or W — accelerate &nbsp;|&nbsp; ↓ or S — brake<br>
+    ← → or A/D — steer &nbsp;|&nbsp; Scroll — speed<br>
+    Konami code — secret zone
+  </div>
 </div>
 
-<!-- HUD -->
 <div id="hud">
+  <div id="mini-map-label">HIGHWAY MAP</div>
+  <div id="mini-map"><div id="mini-map-fill"></div></div>
   <div id="mile-marker"><span class="mile">0</span><br>MILE</div>
   <div id="zone-name"></div>
-  <div id="speedometer"><span class="val">0</span><br><span class="unit">KM/H</span></div>
-  <a id="cta-cost-tracker" class="billboard-cta" href="https://buy.stripe.com/dRm4gB7Tpck43ry9351oI0x" target="_blank" style="bottom:35%;right:15%;">TRY COST TRACKER ↗</a>
-  <a id="cta-memory" class="billboard-cta" href="https://buy.stripe.com/cNifZj0qXesc6DKcfh1oI0y" target="_blank" style="bottom:35%;right:15%;">TRY MEMORY MCP ↗</a>
-  <a id="cta-proof" class="billboard-cta" href="https://buy.stripe.com/aFabJ34Hd3Nye6cbbd1oI0J" target="_blank" style="bottom:35%;right:15%;">TRY PROOF MCP ↗</a>
-  <a id="cta-final" class="billboard-cta" href="https://buy.stripe.com/bJebJ37TpgAkd285QT1oI0q" target="_blank" style="bottom:40%;left:50%;transform:translateX(-50%);font-size:18px;padding:12px 30px;">⚡ GET AGENT PASSPORT ⚡</a>
+  <div id="zone-msg"></div>
+  <div id="easter-egg"></div>
+  
+  <!-- Zone CTAs -->
+  <a id="cta-cost" class="billboard-cta" href="https://buy.stripe.com/dRm4gB7Tpck43ry9351oI0x" target="_blank">💾 TRY COST TRACKER ↗</a>
+  <a id="cta-memory" class="billboard-cta pink" href="https://buy.stripe.com/cNifZj0qXesc6DKcfh1oI0y" target="_blank">🧠 TRY MEMORY MCP ↗</a>
+  <a id="cta-proof" class="billboard-cta amber" href="https://buy.stripe.com/aFabJ34Hd3Nye6cbbd1oI0J" target="_blank">🔐 TRY PROOF MCP ↗</a>
+  <a id="cta-wallet" class="billboard-cta" href="https://buy.stripe.com/6oU9AV0qXabW4vCbbd1oI0I" target="_blank">👛 TRY WALLET MCP ↗</a>
+  <a id="cta-passport" class="billboard-cta pink" href="https://buy.stripe.com/28E3cxflRabW1jqgvx1oI0s" target="_blank">🛂 TRY PASSPORT ↗</a>
+  <a id="cta-escrow" class="billboard-cta amber" href="https://buy.stripe.com/00w5kF0qXfwg3rygvx1oI12" target="_blank">⚡ TRY ESCROW ↗</a>
+  <a id="cta-final" class="billboard-cta pink" href="https://buy.stripe.com/bJebJ37TpgAkd285QT1oI0q" target="_blank" style="font-size:16px;padding:12px 30px;transform:translate(-50%,-50%);left:50%;top:55%;position:absolute">⚡ GET AGENT PASSPORT — $19/MO ⚡</a>
 </div>
 
 <button id="audio-toggle" onclick="toggleAudio()">♪ OFF</button>
+<div id="glitch-overlay"></div>
+<div id="konami-indicator"></div>
 
-<!-- AGENT-READABLE DATA LAYER -->
+<!-- AGENT-READABLE DATA -->
 <div id="agent-layer">
-  <script type="application/ld+json">
-  {
-    "@context": "https://schema.org",
-    "@type": "WebApplication",
-    "name": "AgentPay Highway",
-    "description": "Interactive cyberpunk portfolio for AgentPay Labs — governed payment middleware for AI agents",
-    "url": "https://rumblingb.github.io/agentpay-highway",
-    "applicationCategory": "GameApplication",
-    "operatingSystem": "All",
-    "author": { "@type": "Organization", "name": "AgentPay Labs" },
-    "game": {
-      "zones": [
-        {"mile": 0, "name": "The Wild West", "theme": "chaos", "message": "AI agents spending with no oversight"},
-        {"mile": 1, "name": "The Checkpoint", "theme": "order", "message": "AgentPay passport checkpoint — governed access"},
-        {"mile": 2, "name": "Cost Tracker", "theme": "visibility", "message": "Track every token. Set budgets.", "product": "Agent Cost Tracker MCP", "stripe": "https://buy.stripe.com/dRm4gB7Tpck43ry9351oI0x"},
-        {"mile": 3, "name": "Memory Lane", "theme": "persistence", "message": "Persistent memory across conversations", "product": "Agent Memory MCP", "stripe": "https://buy.stripe.com/cNifZj0qXesc6DKcfh1oI0y"},
-        {"mile": 4, "name": "Proof Zone", "theme": "trust", "message": "Every agent action, cryptographically verified", "product": "Agent Proof MCP", "stripe": "https://buy.stripe.com/aFabJ34Hd3Nye6cbbd1oI0J"},
-        {"mile": 5, "name": "Launchpad", "theme": "convert", "message": "61 products. Get your agent a passport.", "cta": "https://buy.stripe.com/bJebJ37TpgAkd285QT1oI0q"}
-      ]
-    }
+<script type="application/ld+json">
+{
+  "@context":"https://schema.org","@type":"WebApplication",
+  "name":"AgentPay Highway","description":"Cyberpunk portfolio game for AgentPay Labs — governed payment middleware for AI agents. 10 zones. 61 products.",
+  "url":"https://rumblingb.github.io/agentpay-highway","applicationCategory":"GameApplication",
+  "author":{"@type":"Organization","name":"AgentPay Labs","url":"https://github.com/Rumblingb"},
+  "game":{
+    "totalMiles":10,
+    "controls":{"human":"Arrow keys, WASD, scroll, touch","agent":"window.AgentPayHighway.getState(), .jumpTo(mile), .getProducts()"},
+    "zones":[
+      {"mile":0,"name":"The Wild West","theme":"chaos","message":"AI agents spending millions with no oversight. No budgets. No guardrails. Pure anarchy."},
+      {"mile":1,"name":"The Checkpoint","theme":"order","message":"AgentPay passport checkpoint. Governed access. Scoped tokens. Human approval."},
+      {"mile":2,"name":"Cost Tracker","theme":"visibility","message":"Track every token. Set budgets. Real-time alerts.","product":"Agent Cost Tracker MCP","stripe":"https://buy.stripe.com/dRm4gB7Tpck43ry9351oI0x"},
+      {"mile":3,"name":"Memory Lane","theme":"persistence","message":"Persistent memory across conversations. No more lost context.","product":"Agent Memory MCP","stripe":"https://buy.stripe.com/cNifZj0qXesc6DKcfh1oI0y"},
+      {"mile":4,"name":"Proof Zone","theme":"trust","message":"Every agent action cryptographically verified. SHA-256. Immutable.","product":"Agent Proof MCP","stripe":"https://buy.stripe.com/aFabJ34Hd3Nye6cbbd1oI0J"},
+      {"mile":5,"name":"The Factory","theme":"scale","message":"61 products. Conveyor belts of MCPs. Built by agents, for agents.","products":61},
+      {"mile":6,"name":"Dashboard","theme":"metrics","message":"15 cron jobs. 62 Stripe links. 0 humans in the loop. Full automation.","stats":{"cronJobs":15,"stripeLinks":62,"products":61,"mcpServers":24}},
+      {"mile":7,"name":"Rest Stop","theme":"team","message":"The crew behind the highway. AI agents running the show.","team":["Jack (CEO)","Claude (Design)","Codex (Engineering)","Hermes (Operations)"]},
+      {"mile":8,"name":"Wall of Fame","theme":"social-proof","message":"'My agents saved $340 in the first week' — Real builders. Real results."},
+      {"mile":9,"name":"Launchpad","theme":"convert","message":"Get your agent a passport. Join the governed agent economy.","cta":"https://buy.stripe.com/bJebJ37TpgAkd285QT1oI0q"}
+    ]
   }
-  </script>
+}
+</script>
 </div>
 
 <script type="importmap">
-{
-  "imports": {
-    "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js"
-  }
-}
+{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js"}}
 </script>
 
 <script type="module">
 import * as THREE from 'three';
 
 // ============================================================
-// GAME STATE (exposed for agent accessibility)
+// AGENT API — machine-readable game state
 // ============================================================
 window.AgentPayHighway = {
-  version: '1.0.0-mvp',
-  currentMile: 0,
-  speed: 0,
-  isPlaying: false,
-  products: [
-    { name: 'Agent Cost Tracker MCP', mile: 2, stripe: 'https://buy.stripe.com/dRm4gB7Tpck43ry9351oI0x' },
-    { name: 'Agent Memory MCP', mile: 3, stripe: 'https://buy.stripe.com/cNifZj0qXesc6DKcfh1oI0y' },
-    { name: 'Agent Proof MCP', mile: 4, stripe: 'https://buy.stripe.com/aFabJ34Hd3Nye6cbbd1oI0J' },
-    { name: 'AgentPay Pro', mile: 5, stripe: 'https://buy.stripe.com/bJebJ37TpgAkd285QT1oI0q' }
-  ],
+  version: '1.0.0',
+  currentMile: 0, speed: 0, isPlaying: false,
+  totalMiles: 10,
   
-  // Agent API: get current state
   getState() {
     return {
-      mile: this.currentMile,
-      speed: this.speed,
-      playing: this.isPlaying,
-      nearestProduct: this.products.find(p => Math.abs(p.mile - this.currentMile) < 1)
+      version: this.version, mile: +this.currentMile.toFixed(2),
+      speed: +this.speed.toFixed(3), playing: this.isPlaying,
+      progress: +((this.currentMile / this.totalMiles) * 100).toFixed(1),
+      currentZone: zones.find(z => Math.abs(z.mile - this.currentMile) < 0.5) || null,
+      nearestProduct: this.products.find(p => Math.abs(p.mile - this.currentMile) < 1) || null,
+      allZones: zones,
+      allProducts: this.products
     };
   },
   
-  // Agent API: jump to mile
   jumpTo(mile) {
-    if (mile >= 0 && mile <= 5) {
-      camera.position.z = -mile * 30;
+    if (mile >= 0 && mile <= this.totalMiles) {
+      camera.position.z = -(mile * 30) + 10;
       this.currentMile = mile;
-      return { success: true, mile: this.currentMile };
+      return { success: true, mile };
     }
-    return { error: 'Invalid mile. Range: 0-5' };
-  }
+    return { error: `Invalid mile. Range: 0-${this.totalMiles}` };
+  },
+  
+  getProducts() { return this.products; },
+  getZones() { return zones; },
+  
+  products: [
+    { name: 'Agent Cost Tracker MCP', mile: 2, price: '$19/mo', stripe: 'https://buy.stripe.com/dRm4gB7Tpck43ry9351oI0x' },
+    { name: 'Agent Memory MCP', mile: 3, price: '$19/mo', stripe: 'https://buy.stripe.com/cNifZj0qXesc6DKcfh1oI0y' },
+    { name: 'Agent Proof MCP', mile: 4, price: '$19/mo', stripe: 'https://buy.stripe.com/aFabJ34Hd3Nye6cbbd1oI0J' },
+    { name: 'Agent Wallet MCP', mile: 5, price: '$19/mo', stripe: 'https://buy.stripe.com/6oU9AV0qXabW4vCbbd1oI0I' },
+    { name: 'AgentPassport', mile: 6, price: '$19-99/mo', stripe: 'https://buy.stripe.com/28E3cxflRabW1jqgvx1oI0s' },
+    { name: 'AgentPay Escrow', mile: 7, price: 'Free', stripe: 'https://buy.stripe.com/00w5kF0qXfwg3rygvx1oI12' },
+    { name: 'AgentPay Pro', mile: 9, price: '$19/mo', stripe: 'https://buy.stripe.com/bJebJ37TpgAkd285QT1oI0q' }
+  ]
 };
+
+const zones = [
+  { mile: 0, name: '⬡ THE WILD WEST', msg: 'AI agents spending millions. No oversight. No budgets. Pure anarchy.', color: 0xff2d95 },
+  { mile: 1, name: '🛂 CHECKPOINT', msg: 'AgentPay passport required. Governed access. Scoped tokens.', color: 0x00f0ff },
+  { mile: 2, name: '💰 COST TRACKER', msg: 'Track every token. Set budgets. Sleep better.', color: 0xffb800, cta: 'cta-cost' },
+  { mile: 3, name: '🧠 MEMORY LANE', msg: 'Persistent memory. No more losing context between sessions.', color: 0xff2d95, cta: 'cta-memory' },
+  { mile: 4, name: '🔐 PROOF ZONE', msg: 'Every action verified. SHA-256. Immutable audit trail.', color: 0xffb800, cta: 'cta-proof' },
+  { mile: 5, name: '🏭 THE FACTORY', msg: '61 products rolling off the assembly line. Built by agents.', color: 0x00f0ff, cta: 'cta-wallet' },
+  { mile: 6, name: '📊 DASHBOARD', msg: '15 cron jobs. 62 Stripe links. Full automation. Zero humans.', color: 0xff2d95, cta: 'cta-passport' },
+  { mile: 7, name: '👥 REST STOP', msg: 'The crew behind the highway. AI agents running the show.', color: 0x00f0ff, cta: 'cta-escrow' },
+  { mile: 8, name: '🏆 WALL OF FAME', msg: '"Saved $340 in first week" — Real builders. Real results.', color: 0xffb800 },
+  { mile: 9, name: '🚀 LAUNCHPAD', msg: 'Get your agent a passport. Join the governed economy.', color: 0xff2d95, cta: 'cta-final' },
+];
 
 // ============================================================
 // THREE.JS SCENE
 // ============================================================
 const scene = new THREE.Scene();
-scene.fog = new THREE.FogExp2(0x06060f, 0.0002);
+scene.fog = new THREE.FogExp2(0x06060f, 0.00008);
 
-const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.5, 200);
-camera.position.set(0, 3, 10);
-camera.lookAt(0, 0, -50);
+const camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.3, 400);
+camera.position.set(0, 3.5, 10);
 
-const renderer = new THREE.WebGLRenderer({ antialias: true });
+const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
 renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 renderer.shadowMap.enabled = true;
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.2;
 document.body.appendChild(renderer.domElement);
 
 // Lighting
-scene.add(new THREE.AmbientLight(0x1a1a3a, 0.5));
-const moonLight = new THREE.DirectionalLight(0x4466aa, 0.3);
-moonLight.position.set(20, 40, -10);
+scene.add(new THREE.AmbientLight(0x111133, 0.4));
+const moonLight = new THREE.DirectionalLight(0x334477, 0.3);
+moonLight.position.set(30, 60, -50);
 scene.add(moonLight);
 
-// Neon point lights
+// Dynamic neon lights
 const neonLights = [];
-[-8, -4, 0, 4, 8].forEach(x => {
-  const l = new THREE.PointLight(0x00f0ff, 2, 15);
-  l.position.set(x, 2.5, -5);
+for (let i = 0; i < 20; i++) {
+  const l = new THREE.PointLight([0x00f0ff, 0xff2d95, 0xffb800][i % 3], 2.5, 18);
+  l.position.set((i - 10) * 2, 2.5 + Math.sin(i) * 1.5, -i * 15);
   scene.add(l);
   neonLights.push(l);
-});
+}
 
-// Road
-const roadGeo = new THREE.PlaneGeometry(20, 200);
-const roadMat = new THREE.MeshStandardMaterial({ color: 0x111122, roughness: 0.9 });
+// Stars background
+const starsGeo = new THREE.BufferGeometry();
+const starsCount = 1500;
+const starsPos = new Float32Array(starsCount * 3);
+for (let i = 0; i < starsCount; i++) {
+  starsPos[i*3] = (Math.random() - 0.5) * 80;
+  starsPos[i*3+1] = Math.random() * 30;
+  starsPos[i*3+2] = -Math.random() * 350;
+}
+starsGeo.setAttribute('position', new THREE.BufferAttribute(starsPos, 3));
+const starsMat = new THREE.PointsMaterial({ color: 0xffffff, size: 0.08, transparent: true, opacity: 0.6 });
+const stars = new THREE.Points(starsGeo, starsMat);
+scene.add(stars);
+
+// Road — extended to 350 units for 10 miles
+const roadGeo = new THREE.PlaneGeometry(24, 350);
+const roadMat = new THREE.MeshStandardMaterial({ color: 0x111122, roughness: 0.85, metalness: 0.1 });
 const road = new THREE.Mesh(roadGeo, roadMat);
 road.rotation.x = -Math.PI / 2;
-road.position.set(0, 0, -80);
+road.position.set(0, 0, -165);
 road.receiveShadow = true;
 scene.add(road);
 
-// Road markings
-for (let z = 0; z < 160; z += 4) {
-  const markGeo = new THREE.PlaneGeometry(0.3, 2);
-  const markMat = new THREE.MeshBasicMaterial({ color: 0x00f0ff });
-  const mark = new THREE.Mesh(markGeo, markMat);
+// Road center dashes
+for (let z = 0; z < 330; z += 3) {
+  const markGeo = new THREE.PlaneGeometry(0.3, 1.8);
+  const mark = new THREE.Mesh(markGeo, new THREE.MeshBasicMaterial({ color: 0x00f0ff }));
   mark.rotation.x = -Math.PI / 2;
   mark.position.set(0, 0.02, -z);
   scene.add(mark);
 }
 
-// Road edge lines (neon)
-for (let side of [-5, 5]) {
-  for (let z = 0; z < 160; z += 8) {
-    const edgeGeo = new THREE.PlaneGeometry(0.2, 3);
-    const edgeMat = new THREE.MeshBasicMaterial({ color: 0xff2d95 });
-    const edge = new THREE.Mesh(edgeGeo, edgeMat);
+// Neon edge lines — pink left, cyan right
+for (let side = 0; side < 2; side++) {
+  const x = side === 0 ? -6 : 6;
+  const color = side === 0 ? 0xff2d95 : 0x00f0ff;
+  for (let z = 0; z < 330; z += 6) {
+    const edgeGeo = new THREE.PlaneGeometry(0.2, 2.5);
+    const edge = new THREE.Mesh(edgeGeo, new THREE.MeshBasicMaterial({ color }));
     edge.rotation.x = -Math.PI / 2;
-    edge.position.set(side, 0.02, -z);
+    edge.position.set(x, 0.02, -z);
     scene.add(edge);
   }
 }
 
-// Billboard function
-function createBillboard(text, x, z, color = 0x00f0ff) {
+// Billboard creator
+function createBillboard(text, subtitle, x, z, color = 0x00f0ff) {
   const canvas = document.createElement('canvas');
-  canvas.width = 512;
-  canvas.height = 256;
+  canvas.width = 512; canvas.height = 256;
   const ctx = canvas.getContext('2d');
+  const hex = '#' + new THREE.Color(color).getHexString();
   
   ctx.fillStyle = '#06060f';
   ctx.fillRect(0, 0, 512, 256);
-  ctx.strokeStyle = '#' + new THREE.Color(color).getHexString();
-  ctx.lineWidth = 4;
-  ctx.strokeRect(10, 10, 492, 236);
+  ctx.strokeStyle = hex; ctx.lineWidth = 4;
+  ctx.strokeRect(8, 8, 496, 240);
   
-  ctx.fillStyle = '#' + new THREE.Color(color).getHexString();
-  ctx.font = 'bold 28px "Courier New"';
+  // Scanlines
+  ctx.fillStyle = 'rgba(0,240,255,0.03)';
+  for (let y = 0; y < 256; y += 4) ctx.fillRect(0, y, 512, 2);
+  
+  ctx.fillStyle = hex;
+  ctx.font = 'bold 26px "Courier New"';
   ctx.textAlign = 'center';
+  ctx.shadowColor = hex; ctx.shadowBlur = 15;
+  ctx.fillText(text, 256, 110);
   
-  const lines = text.split('\n');
-  lines.forEach((line, i) => {
-    ctx.fillText(line, 256, 100 + i * 35);
-  });
-  
-  // Neon glow effect
-  ctx.shadowColor = '#' + new THREE.Color(color).getHexString();
-  ctx.shadowBlur = 20;
-  ctx.fillText(lines[0], 256, 100);
+  if (subtitle) {
+    ctx.font = '16px "Courier New"';
+    ctx.shadowBlur = 8;
+    ctx.fillText(subtitle, 256, 155);
+    ctx.fillStyle = hex;
+    ctx.font = '12px "Courier New"';
+    ctx.fillText('← → CLICK TO TRY →', 256, 195);
+  }
   
   const tex = new THREE.CanvasTexture(canvas);
-  const mat = new THREE.MeshBasicMaterial({ map: tex, transparent: true });
-  const board = new THREE.Mesh(new THREE.PlaneGeometry(10, 5), mat);
+  tex.minFilter = THREE.LinearFilter;
+  const board = new THREE.Mesh(new THREE.PlaneGeometry(12, 6), new THREE.MeshBasicMaterial({ map: tex, transparent: true }));
   board.position.set(x, 5, z);
-  board.userData = { type: 'billboard' };
+  scene.add(board);
   return board;
 }
 
-// Create zone billboards
-const billboards = [
-  createBillboard('CHAOS ZONE\nAI agents spending\nwith NO oversight', -7, -10, 0xff2d95),
-  createBillboard('PASSPORT\nREQUIRED\nGoverned access', 7, -40, 0x00f0ff),
-  createBillboard('COST TRACKER\nYour agent spent\nHOW MUCH?', -7, -70, 0xffb800),
-  createBillboard('MEMORY LANE\nPersistent context\nacross sessions', 7, -100, 0x00f0ff),
-  createBillboard('PROOF ZONE\nEvery action\nverified on-chain', -7, -130, 0xffb800),
-];
+// Mile 0: CHAOS
+createBillboard('CHAOS ZONE', 'AI agents spending\nwith NO oversight', -8, -10, 0xff2d95);
+// Mile 1: CHECKPOINT
+createBillboard('PASSPORT', 'REQUIRED\nGoverned access', 8, -40, 0x00f0ff);
+// Mile 2: COST TRACKER
+createBillboard('COST TRACKER', 'Your agent spent\nHOW MUCH?', -8, -70, 0xffb800);
+// Mile 3: MEMORY LANE
+createBillboard('MEMORY LANE', 'Persistent context\nacross sessions', 8, -100, 0xff2d95);
+// Mile 4: PROOF ZONE
+createBillboard('PROOF ZONE', 'Every action\nverified on-chain', -8, -130, 0xffb800);
+// Mile 5: FACTORY
+createBillboard('THE FACTORY', '61 products\nBuilt by agents', 8, -160, 0x00f0ff);
+// Mile 6: DASHBOARD
+createBillboard('DASHBOARD', '15 cron jobs\n0 humans in loop', -8, -190, 0xff2d95);
+// Mile 7: REST STOP
+createBillboard('REST STOP', 'The crew behind\nthe highway', 8, -220, 0x00f0ff);
+// Mile 8: WALL OF FAME
+createBillboard('WALL OF FAME', '"Saved $340 in\nfirst week" -Real user', -8, -250, 0xffb800);
+// Mile 9: LAUNCHPAD
+createBillboard('LAUNCHPAD', 'Get your agent\na passport →', 8, -280, 0xff2d95);
 
-billboards.forEach(b => scene.add(b));
-
-// Decorative neon cubes along road
+// Factory zone — conveyor belt cubes (Mile 5)
+const factoryCubes = [];
 for (let i = 0; i < 40; i++) {
-  const cubeGeo = new THREE.BoxGeometry(0.5, 0.5, 0.5);
-  const colors = [0x00f0ff, 0xff2d95, 0xffb800];
-  const cubeMat = new THREE.MeshStandardMaterial({ 
-    color: colors[i % 3], 
-    emissive: colors[i % 3],
-    emissiveIntensity: 0.5 
-  });
-  const cube = new THREE.Mesh(cubeGeo, cubeMat);
-  cube.position.set(
-    (Math.random() - 0.5) * 16,
-    0.5 + Math.random() * 3,
-    -i * 4 - Math.random() * 2
-  );
+  const size = 0.3 + Math.random() * 0.8;
+  const geo = new THREE.BoxGeometry(size, size, size);
+  const colors = [0x00f0ff, 0xff2d95, 0xffb800, 0x00ff88];
+  const mat = new THREE.MeshStandardMaterial({ color: colors[i % 4], emissive: colors[i % 4], emissiveIntensity: 0.4, roughness: 0.3, metalness: 0.8 });
+  const cube = new THREE.Mesh(geo, mat);
+  cube.position.set((Math.random() - 0.5) * 14, 0.5, -160 + Math.random() * 20);
+  cube.userData = { baseZ: cube.position.z, speed: 0.02 + Math.random() * 0.08 };
+  scene.add(cube);
+  factoryCubes.push(cube);
+}
+
+// Dashboard zone — floating data panels (Mile 6)
+const dashPanels = [];
+for (let i = 0; i < 8; i++) {
+  const canvas = document.createElement('canvas');
+  canvas.width = 256; canvas.height = 128;
+  const ctx = canvas.getContext('2d');
+  ctx.fillStyle = '#06060f'; ctx.fillRect(0, 0, 256, 128);
+  ctx.strokeStyle = '#ff2d95'; ctx.lineWidth = 2;
+  ctx.strokeRect(4, 4, 248, 120);
+  ctx.fillStyle = '#ff2d95'; ctx.font = '20px "Courier New"';
+  const stats = ['61 PRODUCTS', '15 CRON JOBS', '62 STRIPE LINKS', '24 MCPs', '0 DOWNTIME', '100% STATIC', '$0 HOSTING', '∞ SCALE'];
+  ctx.fillText(stats[i], 30, 75);
+  const tex = new THREE.CanvasTexture(canvas);
+  const panel = new THREE.Mesh(new THREE.PlaneGeometry(4, 2), new THREE.MeshBasicMaterial({ map: tex, transparent: true, side: THREE.DoubleSide }));
+  panel.position.set((i - 3.5) * 3, 3 + Math.sin(i) * 1.5, -190 + (i % 4) * 3);
+  panel.userData = { baseY: panel.position.y, phase: i * 0.5 };
+  scene.add(panel);
+  dashPanels.push(panel);
+}
+
+// Team zone — character pillars (Mile 7)
+const teamNames = ['JACK', 'CLAUDE', 'CODEX', 'HERMES'];
+const teamRoles = ['CEO', 'Design', 'Engineering', 'Operations'];
+teamNames.forEach((name, i) => {
+  const pillarGeo = new THREE.CylinderGeometry(0.4, 0.5, 2.5, 8);
+  const colors = [0x00f0ff, 0xff2d95, 0xffb800, 0x00ff88];
+  const pillar = new THREE.Mesh(pillarGeo, new THREE.MeshStandardMaterial({ color: colors[i], emissive: colors[i], emissiveIntensity: 0.5, roughness: 0.2 }));
+  pillar.position.set((i - 1.5) * 4, 1.5, -220);
+  scene.add(pillar);
+  
+  // Name label
+  const canvas = document.createElement('canvas');
+  canvas.width = 128; canvas.height = 64;
+  const ctx = canvas.getContext('2d');
+  ctx.fillStyle = '#06060f'; ctx.fillRect(0, 0, 128, 64);
+  ctx.fillStyle = '#' + new THREE.Color(colors[i]).getHexString();
+  ctx.font = 'bold 14px "Courier New"'; ctx.textAlign = 'center';
+  ctx.fillText(name, 64, 28);
+  ctx.font = '10px "Courier New"'; ctx.fillText(teamRoles[i], 64, 48);
+  const tex = new THREE.CanvasTexture(canvas);
+  const label = new THREE.Mesh(new THREE.PlaneGeometry(2, 1), new THREE.MeshBasicMaterial({ map: tex, transparent: true }));
+  label.position.set((i - 1.5) * 4, 3.5, -220);
+  scene.add(label);
+});
+
+// Decorative cubes along road
+for (let i = 0; i < 80; i++) {
+  const geo = new THREE.BoxGeometry(0.3 + Math.random() * 0.5, 0.3 + Math.random() * 0.5, 0.3 + Math.random() * 0.5);
+  const colors = [0x00f0ff, 0xff2d95, 0xffb800, 0x00ff88];
+  const mat = new THREE.MeshStandardMaterial({ color: colors[i % 4], emissive: colors[i % 4], emissiveIntensity: 0.3 });
+  const cube = new THREE.Mesh(geo, mat);
+  cube.position.set((Math.random() - 0.5) * 18, 0.3 + Math.random() * 4, -i * 4 - Math.random() * 2);
   scene.add(cube);
 }
 
 // Particles
 const particlesGeo = new THREE.BufferGeometry();
-const particlesCount = 200;
-const positions = new Float32Array(particlesCount * 3);
+const particlesCount = 300;
+const particlesPositions = new Float32Array(particlesCount * 3);
 for (let i = 0; i < particlesCount; i++) {
-  positions[i * 3] = (Math.random() - 0.5) * 30;
-  positions[i * 3 + 1] = Math.random() * 15;
-  positions[i * 3 + 2] = -Math.random() * 160;
+  particlesPositions[i*3] = (Math.random() - 0.5) * 35;
+  particlesPositions[i*3+1] = Math.random() * 18;
+  particlesPositions[i*3+2] = -Math.random() * 330;
 }
-particlesGeo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-const particlesMat = new THREE.PointsMaterial({ 
-  color: 0x00f0ff, 
-  size: 0.1,
-  transparent: true,
-  opacity: 0.6
-});
-const particles = new THREE.Points(particlesGeo, particlesMat);
+particlesGeo.setAttribute('position', new THREE.BufferAttribute(particlesPositions, 3));
+const particles = new THREE.Points(particlesGeo, new THREE.PointsMaterial({ color: 0x00f0ff, size: 0.08, transparent: true, opacity: 0.5 }));
 scene.add(particles);
 
 // ============================================================
-// GAME LOOP
+// GAME STATE
 // ============================================================
-let speed = 0;
-let targetSpeed = 0;
-let currentMile = 0;
-let isPlaying = false;
-const BASE_SPEED = 0.15;
-const MAX_SPEED = 0.6;
+let speed = 0, targetSpeed = 0, currentMile = 0, isPlaying = false;
+const BASE_SPEED = 0.12, MAX_SPEED = 0.7;
 
-// DOM elements
+// DOM
 const startScreen = document.getElementById('start-screen');
 const speedVal = document.querySelector('#speedometer .val');
 const mileVal = document.querySelector('#mile-marker .mile');
 const zoneName = document.getElementById('zone-name');
-const ctas = {
-  costTracker: document.getElementById('cta-cost-tracker'),
-  memory: document.getElementById('cta-memory'),
-  proof: document.getElementById('cta-proof'),
-  final: document.getElementById('cta-final')
-};
+const zoneMsg = document.getElementById('zone-msg');
+const miniMapFill = document.getElementById('mini-map-fill');
+const glitchOverlay = document.getElementById('glitch-overlay');
+const easterEgg = document.getElementById('easter-egg');
+const konamiIndicator = document.getElementById('konami-indicator');
 
-const zones = [
-  { mile: 0, name: '⬡ THE WILD WEST', message: 'AI agents are spending right now. Nobody is watching.' },
-  { mile: 1, name: '🛂 CHECKPOINT', message: 'AgentPay passport required. Governed. Scoped. Auditable.' },
-  { mile: 2, name: '💰 COST TRACKER', message: 'Track every token. Set budgets. Sleep better.' },
-  { mile: 3, name: '🧠 MEMORY LANE', message: 'Persistent memory. No more "as an AI language model..."' },
-  { mile: 4, name: '🔐 PROOF ZONE', message: 'Every action, cryptographically verified. SHA-256. Immutable.' },
-  { mile: 5, name: '🚀 LAUNCHPAD', message: '61 products. Zero humans in the loop. Get your passport.' },
-];
+// All CTA elements
+const allCTAs = {};
+['cta-cost','cta-memory','cta-proof','cta-wallet','cta-passport','cta-escrow','cta-final'].forEach(id => {
+  allCTAs[id] = document.getElementById(id);
+});
+
+let lastZone = -1;
+let glitchTimeout = null;
+
+function triggerGlitch() {
+  glitchOverlay.style.opacity = '0.3';
+  glitchOverlay.style.background = `rgba(${Math.random()>0.5?255:0},${Math.random()>0.5?45:240},${Math.random()>0.5?149:255},0.05)`;
+  setTimeout(() => { glitchOverlay.style.opacity = '0'; }, 150);
+}
 
 function updateHUD() {
-  speedVal.textContent = Math.floor(speed * 200);
+  speedVal.textContent = Math.floor(speed * 180);
   mileVal.textContent = currentMile.toFixed(1);
+  const pct = Math.min(100, (currentMile / 10) * 100);
+  miniMapFill.style.width = pct + '%';
   
-  // Zone name
-  const zone = zones.find(z => Math.abs(z.mile - currentMile) < 0.5);
-  if (zone && zoneName.textContent !== zone.name) {
+  // Mini-map color changes near end
+  if (currentMile > 8) miniMapFill.style.background = 'var(--neon-pink, #ff2d95)';
+  else if (currentMile > 5) miniMapFill.style.background = 'var(--neon-amber, #ffb800)';
+  else miniMapFill.style.background = 'var(--neon-cyan, #00f0ff)';
+  
+  // Zone detection
+  const zone = zones.find(z => Math.abs(z.mile - currentMile) < 0.45);
+  if (zone && zone.mile !== lastZone) {
     zoneName.textContent = zone.name;
     zoneName.style.opacity = '1';
-    setTimeout(() => { zoneName.style.opacity = '0'; }, 3000);
+    zoneMsg.textContent = zone.msg;
+    zoneMsg.style.opacity = '1';
+    triggerGlitch();
+    lastZone = zone.mile;
+    setTimeout(() => { zoneName.style.opacity = '0.6'; zoneMsg.style.opacity = '0.6'; }, 4000);
   }
   
-  // Show CTAs near product zones
-  const showCTA = (el, mile) => {
-    const dist = Math.abs(currentMile - mile);
-    el.style.display = dist < 0.6 ? 'block' : 'none';
-  };
-  showCTA(ctas.costTracker, 2);
-  showCTA(ctas.memory, 3);
-  showCTA(ctas.proof, 4);
-  showCTA(ctas.final, 5);
+  // Show/hide CTAs
+  Object.entries(allCTAs).forEach(([id, el]) => {
+    const zoneForCTA = zones.find(z => z.cta === id);
+    if (zoneForCTA) {
+      const dist = Math.abs(currentMile - zoneForCTA.mile);
+      el.style.display = dist < 0.55 ? 'block' : 'none';
+    } else {
+      el.style.display = 'none';
+    }
+  });
   
-  // Update global state
+  // Update agent state
   window.AgentPayHighway.currentMile = currentMile;
   window.AgentPayHighway.speed = speed;
 }
 
 // Controls
 document.addEventListener('keydown', (e) => {
+  if (!isPlaying && (e.key === 'Enter' || e.key === ' ')) { startGame(); return; }
+  if (!isPlaying) return;
   if (e.key === 'ArrowUp' || e.key === 'w') targetSpeed = MAX_SPEED;
-  if (e.key === 'ArrowDown' || e.key === 's') targetSpeed = BASE_SPEED * 0.3;
-  if (e.key === 'ArrowRight' || e.key === 'd') camera.position.x = Math.min(camera.position.x + 0.3, 3);
-  if (e.key === 'ArrowLeft' || e.key === 'a') camera.position.x = Math.max(camera.position.x - 0.3, -3);
+  if (e.key === 'ArrowDown' || e.key === 's') targetSpeed = BASE_SPEED * 0.2;
+  if (e.key === 'ArrowRight' || e.key === 'd') camera.position.x = Math.min(camera.position.x + 0.4, 4);
+  if (e.key === 'ArrowLeft' || e.key === 'a') camera.position.x = Math.max(camera.position.x - 0.4, -4);
 });
 
-document.addEventListener('keyup', () => {
-  targetSpeed = BASE_SPEED;
-});
+document.addEventListener('keyup', () => { if (isPlaying) targetSpeed = BASE_SPEED; });
 
-// Touch controls
+// Touch
 let touchActive = false;
-document.addEventListener('touchstart', () => { touchActive = true; targetSpeed = MAX_SPEED; });
+document.addEventListener('touchstart', (e) => {
+  if (!isPlaying) { startGame(); return; }
+  touchActive = true; targetSpeed = MAX_SPEED;
+});
 document.addEventListener('touchend', () => { touchActive = false; targetSpeed = BASE_SPEED; });
 
-// Click to accelerate (desktop fallback)
+// Click to boost
 document.addEventListener('click', (e) => {
   if (!isPlaying || e.target.tagName === 'A' || e.target.tagName === 'BUTTON') return;
   targetSpeed = MAX_SPEED;
-  setTimeout(() => { if (!touchActive) targetSpeed = BASE_SPEED; }, 1000);
+  setTimeout(() => { if (!touchActive) targetSpeed = BASE_SPEED; }, 800);
 });
 
-// Scroll wheel speed
+// Scroll speed
 document.addEventListener('wheel', (e) => {
   if (!isPlaying) return;
-  targetSpeed = Math.max(0.05, Math.min(MAX_SPEED, targetSpeed - e.deltaY * 0.001));
+  targetSpeed = Math.max(0.03, Math.min(MAX_SPEED, targetSpeed - e.deltaY * 0.0008));
+});
+
+// Konami code
+const konamiCode = ['ArrowUp','ArrowUp','ArrowDown','ArrowDown','ArrowLeft','ArrowRight','ArrowLeft','ArrowRight','b','a'];
+let konamiIndex = 0;
+document.addEventListener('keydown', (e) => {
+  if (e.key.toLowerCase() === konamiCode[konamiIndex]?.toLowerCase()) {
+    konamiIndex++;
+    konamiIndicator.style.opacity = (konamiIndex / konamiCode.length).toString();
+    konamiIndicator.textContent = '⚡'.repeat(konamiIndex);
+    if (konamiIndex === konamiCode.length) {
+      konamiIndex = 0;
+      targetSpeed = MAX_SPEED * 2;
+      easterEgg.textContent = '🌟 SECRET ZONE UNLOCKED: MAXIMUM OVERDRIVE 🌟';
+      easterEgg.style.opacity = '1';
+      setTimeout(() => { easterEgg.style.opacity = '0'; targetSpeed = BASE_SPEED; }, 4000);
+      konamiIndicator.style.opacity = '0';
+    }
+  } else {
+    konamiIndex = 0;
+    konamiIndicator.style.opacity = '0';
+  }
 });
 
 function startGame() {
@@ -493,13 +546,12 @@ function startGame() {
   window.AgentPayHighway.isPlaying = true;
   document.body.style.cursor = 'none';
 }
-
 window.startGame = startGame;
 
 // Audio
 let audioOn = false;
 const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-let oscNode = null;
+let oscNode = null, gainNode = null;
 
 function toggleAudio() {
   audioOn = !audioOn;
@@ -507,86 +559,96 @@ function toggleAudio() {
   if (audioOn) {
     if (!oscNode) {
       oscNode = audioCtx.createOscillator();
-      const gain = audioCtx.createGain();
-      gain.gain.value = 0.03;
+      gainNode = audioCtx.createGain();
+      gainNode.gain.value = 0.02;
       oscNode.type = 'sawtooth';
-      oscNode.frequency.value = 80;
-      oscNode.connect(gain);
-      gain.connect(audioCtx.destination);
+      oscNode.frequency.value = 70;
+      oscNode.connect(gainNode);
+      gainNode.connect(audioCtx.destination);
       oscNode.start();
     }
   } else if (oscNode) {
-    oscNode.stop();
-    oscNode = null;
+    oscNode.stop(); oscNode = null; gainNode = null;
   }
 }
 window.toggleAudio = toggleAudio;
 
+// Game loop
 function animate() {
   requestAnimationFrame(animate);
   
   if (isPlaying) {
-    // Smooth speed transitions
-    speed += (targetSpeed - speed) * 0.05;
-    
-    // Move camera forward
+    speed += (targetSpeed - speed) * 0.04;
     camera.position.z -= speed;
-    
-    // Calculate mile
     currentMile = Math.abs(camera.position.z - 10) / 30;
     
     // Bounds
-    if (currentMile > 5.2) {
-      camera.position.z = -5.2 * 30 + 10;
-      currentMile = 5.2;
-      speed *= 0.3;
-      targetSpeed = 0;
+    if (currentMile > 10.3) {
+      camera.position.z = -10.3 * 30 + 10;
+      currentMile = 10.3;
+      speed *= 0.2; targetSpeed = 0;
     }
     if (currentMile < 0) {
-      camera.position.z = 10;
-      currentMile = 0;
-      speed = 0;
+      camera.position.z = 10; currentMile = 0; speed = 0;
     }
     
-    // Neon lights pulse
+    // Neon pulse
     neonLights.forEach((l, i) => {
-      l.intensity = 1.5 + Math.sin(Date.now() * 0.003 + i) * 0.8;
+      l.intensity = 1.5 + Math.sin(Date.now() * 0.003 + i * 0.5) * 0.7;
     });
     
-    // Particles drift
-    const pos = particles.geometry.attributes.position.array;
+    // Factory cubes animate
+    factoryCubes.forEach(c => {
+      c.position.z += c.userData.speed;
+      if (c.position.z > -150) c.position.z = c.userData.baseZ;
+      c.rotation.x += 0.02; c.rotation.y += 0.03;
+    });
+    
+    // Dashboard panels float
+    dashPanels.forEach(p => {
+      p.position.y = p.userData.baseY + Math.sin(Date.now() * 0.002 + p.userData.phase) * 0.5;
+    });
+    
+    // Stars parallax (subtle)
+    const starsPos = stars.geometry.attributes.position.array;
+    for (let i = 0; i < starsCount; i++) {
+      starsPos[i*3+2] += speed * 0.15;
+      if (starsPos[i*3+2] > 20) starsPos[i*3+2] = -340;
+    }
+    stars.geometry.attributes.position.needsUpdate = true;
+    
+    // Particles
+    const pPos = particles.geometry.attributes.position.array;
     for (let i = 0; i < particlesCount; i++) {
-      pos[i * 3 + 2] += speed * 0.5;
-      if (pos[i * 3 + 2] > 20) pos[i * 3 + 2] = -150;
+      pPos[i*3+2] += speed * 0.4;
+      if (pPos[i*3+2] > 20) pPos[i*3+2] = -340;
     }
     particles.geometry.attributes.position.needsUpdate = true;
     
     // Audio
     if (audioOn && oscNode) {
-      oscNode.frequency.value = 60 + speed * 200 + Math.sin(currentMile * 2) * 30;
+      oscNode.frequency.value = 55 + speed * 250 + Math.sin(currentMile * 1.5) * 40;
+      gainNode.gain.value = 0.015 + speed * 0.03;
     }
     
     updateHUD();
   }
   
-  // Always look forward
-  camera.lookAt(camera.position.x, 2, camera.position.z - 30);
-  
+  camera.lookAt(camera.position.x, 2.5, camera.position.z - 35);
   renderer.render(scene, camera);
 }
 
-// Resize
 window.addEventListener('resize', () => {
   camera.aspect = window.innerWidth / window.innerHeight;
   camera.updateProjectionMatrix();
   renderer.setSize(window.innerWidth, window.innerHeight);
 });
 
-// Agent accessibility: expose controls globally
-console.log('🛣️ AgentPay Highway v1.0.0-mvp');
-console.log('👤 Humans: Press Enter or tap to drive. Arrow keys / WASD to control.');
-console.log('🤖 Agents: window.AgentPayHighway.getState() or .jumpTo(mile)');
-console.log('📊 Structured data: view-source for JSON-LD game zones');
+console.log('🛣️  AgentPay Highway v1.0.0 — 10 Miles');
+console.log('👤  Humans: Press Enter → drive. WASD/arrows. Scroll. Konami code.');
+console.log('🤖  Agents: window.AgentPayHighway.getState() | .jumpTo(mile) | .getProducts()');
+console.log('🏭  61 products. 15 cron jobs. 0 humans in the loop.');
+console.log('🔗  https://rumblingb.github.io/agentpay-highway/');
 
 animate();
 </script>
