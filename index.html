@@ -443,6 +443,7 @@ function triggerGlitch() {
   glitchOverlay.style.opacity = '0.3';
   glitchOverlay.style.background = `rgba(${Math.random()>0.5?255:0},${Math.random()>0.5?45:240},${Math.random()>0.5?149:255},0.05)`;
   setTimeout(() => { glitchOverlay.style.opacity = '0'; }, 150);
+  playGlitch(); // Artlist SFX
 }
 
 function updateHUD() {
@@ -548,27 +549,54 @@ function startGame() {
 }
 window.startGame = startGame;
 
-// Audio
-let audioOn = false;
+// Audio — Artlist licensed music
+let audioMode = 0; // 0=OFF, 1=Music, 2=Music+SFX
+let bgmNode = null, bgmGain = null, bgmSource = null;
+let glitchBuffer = null;
 const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-let oscNode = null, gainNode = null;
 
-function toggleAudio() {
-  audioOn = !audioOn;
-  document.getElementById('audio-toggle').textContent = audioOn ? '♪ ON' : '♪ OFF';
-  if (audioOn) {
-    if (!oscNode) {
-      oscNode = audioCtx.createOscillator();
-      gainNode = audioCtx.createGain();
-      gainNode.gain.value = 0.02;
-      oscNode.type = 'sawtooth';
-      oscNode.frequency.value = 70;
-      oscNode.connect(gainNode);
-      gainNode.connect(audioCtx.destination);
-      oscNode.start();
-    }
-  } else if (oscNode) {
-    oscNode.stop(); oscNode = null; gainNode = null;
+async function loadAudioBuffer(url) {
+  const resp = await fetch(url);
+  const arrayBuf = await resp.arrayBuffer();
+  return audioCtx.decodeAudioData(arrayBuf);
+}
+
+async function initBGM() {
+  if (bgmNode) return;
+  try {
+    const buffer = await loadAudioBuffer('epshy - Neon Dreams.mp3');
+    glitchBuffer = await loadAudioBuffer('Ella Joy Meir - Into the Void.mp3');
+    bgmSource = audioCtx.createBufferSource();
+    bgmSource.buffer = buffer;
+    bgmSource.loop = true;
+    bgmGain = audioCtx.createGain();
+    bgmGain.gain.value = 0.0;
+    bgmSource.connect(bgmGain);
+    bgmGain.connect(audioCtx.destination);
+    bgmSource.start();
+    bgmNode = true;
+  } catch(e) { console.log('Audio load pending...', e.message); }
+}
+
+function playGlitch() {
+  if (!glitchBuffer || audioMode < 2) return;
+  const src = audioCtx.createBufferSource();
+  src.buffer = glitchBuffer;
+  const g = audioCtx.createGain();
+  g.gain.value = 0.15;
+  src.connect(g);
+  g.connect(audioCtx.destination);
+  src.start();
+}
+
+async function toggleAudio() {
+  audioMode = (audioMode + 1) % 3;
+  const labels = ['♪ OFF', '♪ MUSIC', '♪ MUSIC+SFX'];
+  document.getElementById('audio-toggle').textContent = labels[audioMode];
+  
+  if (audioMode > 0 && !bgmNode) await initBGM();
+  if (bgmGain) {
+    bgmGain.gain.value = audioMode > 0 ? 0.06 : 0.0;
   }
 }
 window.toggleAudio = toggleAudio;
@@ -625,10 +653,9 @@ function animate() {
     }
     particles.geometry.attributes.position.needsUpdate = true;
     
-    // Audio
-    if (audioOn && oscNode) {
-      oscNode.frequency.value = 55 + speed * 250 + Math.sin(currentMile * 1.5) * 40;
-      gainNode.gain.value = 0.015 + speed * 0.03;
+    // Audio — modulate BGM speed with game speed
+    if (bgmSource && bgmSource.playbackRate) {
+      bgmSource.playbackRate.value = 0.8 + speed * 1.2;
     }
     
     updateHUD();
