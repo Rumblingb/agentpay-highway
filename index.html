@@ -131,12 +131,44 @@
 </script>
 </div>
 
-<script type="importmap">
-{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js"}}
+<!-- Three.js loaded dynamically with CDN fallbacks (see module below) -->
+<script>
+window.__THREE_LOADING = true;
+// Detect failure after timeout
+setTimeout(function(){
+  if(!window.__THREE_LOADED){
+    var errDiv = document.createElement('div');
+    errDiv.style.cssText = 'position:fixed;inset:0;z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;background:#06060f;color:#ff2d95;font-family:"Courier New",monospace;text-align:center;padding:20px';
+    errDiv.innerHTML = '<h1 style="color:#00f0ff;text-shadow:0 0 20px #00f0ff;margin-bottom:16px">⬡ CONNECTION ERROR</h1><p style="color:#c8c8e0;margin-bottom:8px;max-width:400px">Three.js failed to load from CDN.</p><p style="color:#6a6a8a;font-size:12px">Try reloading the page or disabling adblockers for this site.</p><button onclick="location.reload()" style="margin-top:20px;padding:10px 30px;background:transparent;border:1px solid #00f0ff;color:#00f0ff;cursor:pointer;font-family:inherit;font-size:14px">⟳ RELOAD</button>';
+    document.body.appendChild(errDiv);
+  }
+}, 8000);
 </script>
 
 <script type="module">
-import * as THREE from 'three';
+// Dynamic Three.js loading with CDN fallback
+async function loadThree() {
+  const cdns = [
+    'https://unpkg.com/three@0.160.0/build/three.module.js',
+    'https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js',
+    'https://esm.sh/three@0.160.0'
+  ];
+  for (const url of cdns) {
+    try {
+      const mod = await import(url);
+      window.__THREE = mod.default || mod;
+      window.__THREE_LOADED = true;
+      return window.__THREE;
+    } catch(e) {
+      console.warn('Three.js CDN failed:', url, e.message);
+    }
+  }
+  throw new Error('All Three.js CDNs failed');
+}
+
+// Rest of the module runs after Three.js loads
+loadThree().then(THREE => {
+  window.__THREE = THREE;
 
 // ============================================================
 // AGENT API — machine-readable game state
@@ -678,6 +710,16 @@ console.log('🏭  61 products. 15 cron jobs. 0 humans in the loop.');
 console.log('🔗  https://rumblingb.github.io/agentpay-highway/');
 
 animate();
+}).catch(error => {
+  // Three.js failed to load from all CDNs
+  console.error('AgentPay Highway failed to start:', error.message);
+  var errDiv = document.createElement('div');
+  errDiv.style.cssText = 'position:fixed;inset:0;z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;background:#06060f;color:#ff2d95;font-family:"Courier New",monospace;text-align:center;padding:20px';
+  errDiv.innerHTML = '<h1 style="color:#00f0ff;text-shadow:0 0 20px #00f0ff;margin-bottom:16px;font-size:clamp(20px,5vw,44px)">⬡ CANNOT START</h1><p style="color:#c8c8e0;margin-bottom:8px;max-width:400px">The highway is under construction.</p><p style="color:#6a6a8a;font-size:12px">Could not load 3D engine. Try a different browser or disable adblockers.</p><button onclick="location.reload()" style="margin-top:20px;padding:10px 30px;background:transparent;border:1px solid #00f0ff;color:#00f0ff;cursor:pointer;font-family:inherit;font-size:14px">⟳ RETRY</button>';
+  document.body.appendChild(errDiv);
+  var ss = document.getElementById('start-screen');
+  if(ss) ss.style.display = 'none';
+});
 </script>
 </body>
 </html>
