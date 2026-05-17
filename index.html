@@ -678,11 +678,12 @@ function startGame() {
   // Start moving - simple, reliable timer-based movement
   if (window.__moveInterval) clearInterval(window.__moveInterval);
   window.__moveInterval = setInterval(function() {
-    if (!isPlaying) return;
-    // Move camera 0.3 units per tick
-    camera.position.z = camera.position.z - 0.3;
-    currentMile = Math.abs(camera.position.z - 10) / 30;
-    updateHUD();
+    try {
+      if (!isPlaying) return;
+      // Move camera 0.3 units per tick
+      camera.position.z = camera.position.z - 0.3;
+      currentMile = Math.abs(camera.position.z - 10) / 30;
+      updateHUD();
     
     // Apply speed-based animation to scene elements
     neonLights.forEach((l, i) => {
@@ -708,6 +709,7 @@ function startGame() {
     
     // Bounds
     if (currentMile > 10.3) { clearInterval(window.__moveInterval); }
+  } catch(e) { /* interval tick error - silently continue */ }
   }, 33); // ~30fps
 }
 window.startGame = startGame;
