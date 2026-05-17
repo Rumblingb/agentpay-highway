@@ -2,7 +2,9 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
 <title>AgentPay Highway — Governed AI Agent Economy</title>
 <meta name="description" content="Drive the AgentPay Highway. 61 products. 10-mile cyberpunk journey through the governed agent economy. Playable by humans AND AI agents.">
 <meta property="og:title" content="AgentPay Highway — Cyberpunk Portfolio Game">
@@ -137,22 +139,39 @@
 window.__THREE_LOADING = true;
 
 // Queue clicks on start screen until module is ready
-var _startQueue = [];
+window._startQueued = false;
 window._tryStart = function() {
   if (typeof window.startGame === 'function') {
     window.startGame();
     return true;
   }
-  // Show loading more prominently
+  // Queue and show loading more prominently
+  window._startQueued = true;
   var lm = document.getElementById('loading-msg');
-  if (lm) { lm.style.display = 'block'; lm.style.color = '#ffb800'; }
+  if (lm) { 
+    lm.style.display = 'block'; 
+    lm.style.color = '#ffb800';
+    lm.textContent = '⬡ Engine loading... tap again when ready';
+  }
   return false;
 };
+// Auto-start when module loads if user already tapped
+window._autoStartWhenReady = function() {
+  if (window._startQueued && typeof window.startGame === 'function') {
+    window._startQueued = false;
+    window.startGame();
+  }
+};
+
 // Immediately try on click/tap
 document.addEventListener('DOMContentLoaded', function() {
   var ss = document.getElementById('start-screen');
   if (ss) {
     ss.addEventListener('click', function() { window._tryStart(); });
+    ss.addEventListener('touchend', function(e) { 
+      e.preventDefault(); 
+      window._tryStart(); 
+    });
   }
 });
 
@@ -657,8 +676,22 @@ function startGame() {
 }
 window.startGame = startGame;
 
+// Auto-start if user tapped before module loaded
+window._autoStartWhenReady();
+
 // Click/tap start screen to start (safe check, runs in addition to _tryStart)
 startScreen.addEventListener('click', startGame);
+startScreen.addEventListener('touchend', function(e) { e.preventDefault(); startGame(); });
+
+// Resume AudioContext on first user interaction (required for mobile)
+document.addEventListener('touchstart', function resumeAudio() {
+  if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
+  document.removeEventListener('touchstart', resumeAudio);
+}, { once: true });
+document.addEventListener('click', function resumeAudio2() {
+  if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
+  document.removeEventListener('click', resumeAudio2);
+}, { once: true });
 
 // Audio — Artlist licensed music
 let audioMode = 0; // 0=OFF, 1=Music, 2=Music+SFX
