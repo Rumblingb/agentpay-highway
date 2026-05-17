@@ -671,13 +671,16 @@ function startGame() {
   window.AgentPayHighway.isPlaying = true;
   document.body.style.cursor = 'none';
   
+  // CONFIRMATION: flash the background cyan to verify startGame runs
+  document.body.style.background = '#001133';
+  setTimeout(function() { document.body.style.background = ''; }, 500);
+  
   // Start moving - simple, reliable timer-based movement
-  // No dependency on speed accumulation which breaks on some mobile devices
   if (window.__moveInterval) clearInterval(window.__moveInterval);
   window.__moveInterval = setInterval(function() {
     if (!isPlaying) return;
-    // Move camera 0.3 units per tick (roughly 1 mile per second at 30fps)
-    camera.position.z -= 0.3;
+    // Move camera 0.3 units per tick
+    camera.position.z = camera.position.z - 0.3;
     currentMile = Math.abs(camera.position.z - 10) / 30;
     updateHUD();
     
