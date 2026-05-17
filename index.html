@@ -675,15 +675,34 @@ function startGame() {
   document.body.style.background = '#001133';
   setTimeout(function() { document.body.style.background = ''; }, 500);
   
-  // Start moving - simple, reliable timer-based movement
+  // Start moving
   if (window.__moveInterval) clearInterval(window.__moveInterval);
+  var _tick = 0;
   window.__moveInterval = setInterval(function() {
     try {
+      _tick++;
       if (!isPlaying) return;
-      // Move camera 0.3 units per tick
+      
+      // DIRECT UI UPDATE: force mile display to increment
+      // This works even if camera manipulation fails
+      var mileEl = document.querySelector('#mile-marker .mile');
+      if (mileEl) {
+        var rawMile = _tick / 3; // ~1 mile per second
+        mileEl.textContent = rawMile.toFixed(1);
+      }
+      
+      // Move camera
       camera.position.z = camera.position.z - 0.3;
       currentMile = Math.abs(camera.position.z - 10) / 30;
-      updateHUD();
+      
+      // Also force the HUD
+      if (mileEl) mileEl.textContent = currentMile.toFixed(1);
+      var mapFill = document.getElementById('mini-map-fill');
+      if (mapFill) mapFill.style.width = Math.min(100, (currentMile / 10) * 100) + '%';
+      
+      window.AgentPayHighway.currentMile = currentMile;
+      window.AgentPayHighway.speed = 0.3;
+      window.AgentPayHighway.isPlaying = true;
     
     // Apply speed-based animation to scene elements
     neonLights.forEach((l, i) => {
