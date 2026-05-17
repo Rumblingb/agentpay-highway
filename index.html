@@ -673,6 +673,21 @@ function startGame() {
   window.AgentPayHighway.speed = 0;
   document.body.style.cursor = 'none';
   console.log('🚀 Game started — mile 0, speed target', targetSpeed);
+  
+  // Also kick animation with a timer-based drive as rAF backup
+  if (!window.__driveTimer) {
+    window.__driveTimer = setInterval(function() {
+      if (!isPlaying) return;
+      var now = Date.now();
+      if (!window.__lastDrive) window.__lastDrive = now;
+      var dt = Math.min((now - window.__lastDrive) / 16, 5); // normalize to ~60fps, cap at 5x
+      window.__lastDrive = now;
+      var driveSpeed = targetSpeed || BASE_SPEED || 0.3;
+      camera.position.z -= driveSpeed * dt * 0.05;
+      currentMile = Math.abs(camera.position.z - 10) / 30;
+      updateHUD();
+    }, 16);
+  }
 }
 window.startGame = startGame;
 
