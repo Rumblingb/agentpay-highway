@@ -70,7 +70,7 @@
 </head>
 <body>
 
-<div id="start-screen" style="cursor:default">
+<div id="start-screen">
   <h1>⬡ AGENTPAY HIGHWAY</h1>
   <div class="sub">10-mile cyberpunk journey through the governed agent economy<br>Playable by humans. Readable by AI agents.</div>
   <div class="start-btn" id="start-btn">[ PRESS ENTER OR TAP TO DRIVE ]</div>
@@ -135,6 +135,27 @@
 <!-- Three.js loaded dynamically with CDN fallbacks (see module below) -->
 <script>
 window.__THREE_LOADING = true;
+
+// Queue clicks on start screen until module is ready
+var _startQueue = [];
+window._tryStart = function() {
+  if (typeof window.startGame === 'function') {
+    window.startGame();
+    return true;
+  }
+  // Show loading more prominently
+  var lm = document.getElementById('loading-msg');
+  if (lm) { lm.style.display = 'block'; lm.style.color = '#ffb800'; }
+  return false;
+};
+// Immediately try on click/tap
+document.addEventListener('DOMContentLoaded', function() {
+  var ss = document.getElementById('start-screen');
+  if (ss) {
+    ss.addEventListener('click', function() { window._tryStart(); });
+  }
+});
+
 // Show loading message if start screen is visible
 var loadMsg = document.getElementById('loading-msg');
 if (loadMsg) loadMsg.style.display = 'block';
@@ -571,7 +592,7 @@ function updateHUD() {
 
 // Controls
 document.addEventListener('keydown', (e) => {
-  if (!isPlaying && (e.key === 'Enter' || e.key === ' ')) { startGame(); return; }
+  if (!isPlaying && (e.key === 'Enter' || e.key === ' ')) { window._tryStart(); return; }
   if (!isPlaying) return;
   if (e.key === 'ArrowUp' || e.key === 'w') targetSpeed = MAX_SPEED;
   if (e.key === 'ArrowDown' || e.key === 's') targetSpeed = BASE_SPEED * 0.2;
@@ -584,7 +605,7 @@ document.addEventListener('keyup', () => { if (isPlaying) targetSpeed = BASE_SPE
 // Touch
 let touchActive = false;
 document.addEventListener('touchstart', (e) => {
-  if (!isPlaying) { startGame(); return; }
+  if (!isPlaying) { window._tryStart(); return; }
   touchActive = true; targetSpeed = MAX_SPEED;
 });
 document.addEventListener('touchend', () => { touchActive = false; targetSpeed = BASE_SPEED; });
@@ -628,13 +649,15 @@ function startGame() {
   if (isPlaying) return;
   startScreen.style.display = 'none';
   isPlaying = true;
-  targetSpeed = BASE_SPEED;
+  targetSpeed = BASE_SPEED || 0.3;
   window.AgentPayHighway.isPlaying = true;
+  window.AgentPayHighway.speed = 0;
   document.body.style.cursor = 'none';
+  console.log('🚀 Game started — mile 0, speed target', targetSpeed);
 }
 window.startGame = startGame;
 
-// Click/tap start screen to start (safe check)
+// Click/tap start screen to start (safe check, runs in addition to _tryStart)
 startScreen.addEventListener('click', startGame);
 
 // Audio — Artlist licensed music
