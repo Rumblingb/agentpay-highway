@@ -20,7 +20,7 @@
   }
   *{margin:0;padding:0;box-sizing:border-box}
   body{background:var(--void);overflow:hidden;font-family:'Courier New',monospace;cursor:none;user-select:none;-webkit-user-select:none}
-  canvas{display:block;position:fixed;top:0;left:0;z-index:0}
+  canvas{display:block;position:fixed;top:0;left:0;z-index:0;width:100vw;height:100vh;will-change:transform;-webkit-transform:translateZ(0);transform:translateZ(0)}
   
   #hud{position:fixed;z-index:10;pointer-events:none;width:100%;height:100%}
   
@@ -134,27 +134,24 @@
 </script>
 </div>
 
-<!-- Three.js loaded dynamically with CDN fallbacks (see module below) -->
 <script>
-window.__THREE_LOADING = true;
-
-// Queue clicks on start screen until module is ready
+// ============================================================
+// PRELOAD — queue clicks until Three.js module is ready
+// ============================================================
 window._startQueued = false;
+window.__sceneReady = false;
+
 window._tryStart = function() {
   if (typeof window.startGame === 'function') {
     window.startGame();
     return true;
   }
-  // Queue and show loading more prominently
   window._startQueued = true;
   var lm = document.getElementById('loading-msg');
-  if (lm) { 
-    lm.style.display = 'block'; 
-    lm.style.color = '#ffb800';
-    lm.textContent = '⬡ Engine loading... tap again when ready';
-  }
+  if (lm) lm.style.display = 'block';
   return false;
 };
+
 // Auto-start when module loads if user already tapped
 window._autoStartWhenReady = function() {
   if (window._startQueued && typeof window.startGame === 'function') {
@@ -163,34 +160,34 @@ window._autoStartWhenReady = function() {
   }
 };
 
-// Immediately try on click/tap
+// Set up start screen listeners immediately
 document.addEventListener('DOMContentLoaded', function() {
   var ss = document.getElementById('start-screen');
   if (ss) {
     ss.addEventListener('click', function() { window._tryStart(); });
-    ss.addEventListener('touchend', function(e) { 
-      e.preventDefault(); 
-      window._tryStart(); 
-    });
+    ss.addEventListener('touchend', function(e) { e.preventDefault(); window._tryStart(); });
   }
 });
 
-// Show loading message if start screen is visible
+// Show loading message on start screen
 var loadMsg = document.getElementById('loading-msg');
 if (loadMsg) loadMsg.style.display = 'block';
-// Detect failure after timeout
+
+// Timeout failsafe
 setTimeout(function(){
-  if(!window.__THREE_LOADED){
+  if (!window.__THREE_LOADED) {
     var errDiv = document.createElement('div');
     errDiv.style.cssText = 'position:fixed;inset:0;z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;background:#06060f;color:#ff2d95;font-family:"Courier New",monospace;text-align:center;padding:20px';
-    errDiv.innerHTML = '<h1 style="color:#00f0ff;text-shadow:0 0 20px #00f0ff;margin-bottom:16px">⬡ CONNECTION ERROR</h1><p style="color:#c8c8e0;margin-bottom:8px;max-width:400px">Three.js failed to load from CDN.</p><p style="color:#6a6a8a;font-size:12px">Try reloading the page or disabling adblockers for this site.</p><button onclick="location.reload()" style="margin-top:20px;padding:10px 30px;background:transparent;border:1px solid #00f0ff;color:#00f0ff;cursor:pointer;font-family:inherit;font-size:14px">⟳ RELOAD</button>';
+    errDiv.innerHTML = '<h1 style="color:#00f0ff;text-shadow:0 0 20px #00f0ff;margin-bottom:16px;font-size:clamp(20px,5vw,44px)">⬡ CONNECTION ERROR</h1><p style="color:#c8c8e0;margin-bottom:8px;max-width:400px">Three.js failed to load from CDN.</p><p style="color:#6a6a8a;font-size:12px">Try reloading the page or disabling adblockers for this site.</p><button onclick="location.reload()" style="margin-top:20px;padding:10px 30px;background:transparent;border:1px solid #00f0ff;color:#00f0ff;cursor:pointer;font-family:inherit;font-size:14px">⟳ RELOAD</button>';
     document.body.appendChild(errDiv);
   }
 }, 8000);
 </script>
 
 <script type="module">
-// Dynamic Three.js loading with CDN fallback
+// ============================================================
+// DYNAMIC THREE.JS LOADING with fallback CDNs
+// ============================================================
 async function loadThree() {
   const cdns = [
     'https://unpkg.com/three@0.160.0/build/three.module.js',
@@ -210,702 +207,629 @@ async function loadThree() {
   throw new Error('All Three.js CDNs failed');
 }
 
-// Rest of the module runs after Three.js loads
 loadThree().then(THREE => {
   window.__THREE = THREE;
-  // Hide loading message
   var lm = document.getElementById('loading-msg');
   if (lm) lm.style.display = 'none';
 
-// ============================================================
-// AGENT API — machine-readable game state
-// ============================================================
-window.AgentPayHighway = {
-  version: '1.0.0',
-  currentMile: 0, speed: 0, isPlaying: false,
-  totalMiles: 10,
+  // ============================================================
+  // AGENT API
+  // ============================================================
+  window.AgentPayHighway = {
+    version: '1.0.0',
+    currentMile: 0, speed: 0, isPlaying: false,
+    totalMiles: 10,
+
+    getState() {
+      return {
+        version: this.version, mile: +this.currentMile.toFixed(2),
+        speed: +this.speed.toFixed(3), playing: this.isPlaying,
+        progress: +((this.currentMile / this.totalMiles) * 100).toFixed(1),
+        currentZone: zones.find(z => Math.abs(z.mile - this.currentMile) < 0.5) || null,
+        nearestProduct: this.products.find(p => Math.abs(p.mile - this.currentMile) < 1) || null,
+        allZones: zones,
+        allProducts: this.products
+      };
+    },
+
+    jumpTo(mile) {
+      if (mile >= 0 && mile <= this.totalMiles) {
+        camera.position.z = -(mile * 30) + 10;
+        this.currentMile = mile;
+        return { success: true, mile };
+      }
+      return { error: 'Invalid mile. Range: 0-' + this.totalMiles };
+    },
+
+    getProducts() { return this.products; },
+    getZones() { return zones; },
+
+    products: [
+      { name: 'Agent Cost Tracker MCP', mile: 2, price: '$19/mo', stripe: 'https://buy.stripe.com/dRm4gB7Tpck43ry9351oI0x' },
+      { name: 'Agent Memory MCP', mile: 3, price: '$19/mo', stripe: 'https://buy.stripe.com/cNifZj0qXesc6DKcfh1oI0y' },
+      { name: 'Agent Proof MCP', mile: 4, price: '$19/mo', stripe: 'https://buy.stripe.com/aFabJ34Hd3Nye6cbbd1oI0J' },
+      { name: 'Agent Wallet MCP', mile: 5, price: '$19/mo', stripe: 'https://buy.stripe.com/6oU9AV0qXabW4vCbbd1oI0I' },
+      { name: 'AgentPassport', mile: 6, price: '$19-99/mo', stripe: 'https://buy.stripe.com/28E3cxflRabW1jqgvx1oI0s' },
+      { name: 'AgentPay Escrow', mile: 7, price: 'Free', stripe: 'https://buy.stripe.com/00w5kF0qXfwg3rygvx1oI12' },
+      { name: 'AgentPay Pro', mile: 9, price: '$19/mo', stripe: 'https://buy.stripe.com/bJebJ37TpgAkd285QT1oI0q' }
+    ]
+  };
+
+  const zones = [
+    { mile: 0, name: '⬡ THE WILD WEST', msg: 'AI agents spending millions. No oversight. No budgets. Pure anarchy.', color: 0xff2d95 },
+    { mile: 1, name: '🛂 CHECKPOINT', msg: 'AgentPay passport required. Governed access. Scoped tokens.', color: 0x00f0ff },
+    { mile: 2, name: '💰 COST TRACKER', msg: 'Track every token. Set budgets. Sleep better.', color: 0xffb800, cta: 'cta-cost' },
+    { mile: 3, name: '🧠 MEMORY LANE', msg: 'Persistent memory. No more losing context between sessions.', color: 0xff2d95, cta: 'cta-memory' },
+    { mile: 4, name: '🔐 PROOF ZONE', msg: 'Every action verified. SHA-256. Immutable audit trail.', color: 0xffb800, cta: 'cta-proof' },
+    { mile: 5, name: '🏭 THE FACTORY', msg: '61 products rolling off the assembly line. Built by agents.', color: 0x00f0ff, cta: 'cta-wallet' },
+    { mile: 6, name: '📊 DASHBOARD', msg: '15 cron jobs. 62 Stripe links. Full automation. Zero humans.', color: 0xff2d95, cta: 'cta-passport' },
+    { mile: 7, name: '👥 REST STOP', msg: 'The crew behind the highway. AI agents running the show.', color: 0x00f0ff, cta: 'cta-escrow' },
+    { mile: 8, name: '🏆 WALL OF FAME', msg: '"Saved $340 in first week" — Real builders. Real results.', color: 0xffb800 },
+    { mile: 9, name: '🚀 LAUNCHPAD', msg: 'Get your agent a passport. Join the governed economy.', color: 0xff2d95, cta: 'cta-final' },
+  ];
+
+  // ============================================================
+  // THREE.JS SCENE
+  // ============================================================
+  const scene = new THREE.Scene();
+  scene.fog = new THREE.FogExp2(0x06060f, 0.00008);
+
+  const camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.3, 400);
+  camera.position.set(0, 3.5, 10);
+
+  // KEY FIX: no alpha — iOS Safari has compositing bugs with transparent WebGL canvases
+  const renderer = new THREE.WebGLRenderer({
+    antialias: true,
+    alpha: false,
+    powerPreference: 'high-performance'
+  });
+  renderer.setSize(window.innerWidth, window.innerHeight);
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  renderer.shadowMap.enabled = true;
+  renderer.toneMapping = THREE.ACESFilmicToneMapping;
+  renderer.toneMappingExposure = 1.2;
+  renderer.setClearColor(0x06060f, 1);
   
-  getState() {
-    return {
-      version: this.version, mile: +this.currentMile.toFixed(2),
-      speed: +this.speed.toFixed(3), playing: this.isPlaying,
-      progress: +((this.currentMile / this.totalMiles) * 100).toFixed(1),
-      currentZone: zones.find(z => Math.abs(z.mile - this.currentMile) < 0.5) || null,
-      nearestProduct: this.products.find(p => Math.abs(p.mile - this.currentMile) < 1) || null,
-      allZones: zones,
-      allProducts: this.products
-    };
-  },
-  
-  jumpTo(mile) {
-    if (mile >= 0 && mile <= this.totalMiles) {
-      camera.position.z = -(mile * 30) + 10;
-      this.currentMile = mile;
-      return { success: true, mile };
-    }
-    return { error: `Invalid mile. Range: 0-${this.totalMiles}` };
-  },
-  
-  getProducts() { return this.products; },
-  getZones() { return zones; },
-  
-  products: [
-    { name: 'Agent Cost Tracker MCP', mile: 2, price: '$19/mo', stripe: 'https://buy.stripe.com/dRm4gB7Tpck43ry9351oI0x' },
-    { name: 'Agent Memory MCP', mile: 3, price: '$19/mo', stripe: 'https://buy.stripe.com/cNifZj0qXesc6DKcfh1oI0y' },
-    { name: 'Agent Proof MCP', mile: 4, price: '$19/mo', stripe: 'https://buy.stripe.com/aFabJ34Hd3Nye6cbbd1oI0J' },
-    { name: 'Agent Wallet MCP', mile: 5, price: '$19/mo', stripe: 'https://buy.stripe.com/6oU9AV0qXabW4vCbbd1oI0I' },
-    { name: 'AgentPassport', mile: 6, price: '$19-99/mo', stripe: 'https://buy.stripe.com/28E3cxflRabW1jqgvx1oI0s' },
-    { name: 'AgentPay Escrow', mile: 7, price: 'Free', stripe: 'https://buy.stripe.com/00w5kF0qXfwg3rygvx1oI12' },
-    { name: 'AgentPay Pro', mile: 9, price: '$19/mo', stripe: 'https://buy.stripe.com/bJebJ37TpgAkd285QT1oI0q' }
-  ]
-};
+  // Force GPU compositing on canvas via style
+  var canvas = renderer.domElement;
+  canvas.style.cssText = 'display:block;position:fixed;top:0;left:0;z-index:0;width:100vw;height:100vh;will-change:transform;-webkit-transform:translateZ(0);transform:translateZ(0)';
+  document.body.appendChild(canvas);
 
-const zones = [
-  { mile: 0, name: '⬡ THE WILD WEST', msg: 'AI agents spending millions. No oversight. No budgets. Pure anarchy.', color: 0xff2d95 },
-  { mile: 1, name: '🛂 CHECKPOINT', msg: 'AgentPay passport required. Governed access. Scoped tokens.', color: 0x00f0ff },
-  { mile: 2, name: '💰 COST TRACKER', msg: 'Track every token. Set budgets. Sleep better.', color: 0xffb800, cta: 'cta-cost' },
-  { mile: 3, name: '🧠 MEMORY LANE', msg: 'Persistent memory. No more losing context between sessions.', color: 0xff2d95, cta: 'cta-memory' },
-  { mile: 4, name: '🔐 PROOF ZONE', msg: 'Every action verified. SHA-256. Immutable audit trail.', color: 0xffb800, cta: 'cta-proof' },
-  { mile: 5, name: '🏭 THE FACTORY', msg: '61 products rolling off the assembly line. Built by agents.', color: 0x00f0ff, cta: 'cta-wallet' },
-  { mile: 6, name: '📊 DASHBOARD', msg: '15 cron jobs. 62 Stripe links. Full automation. Zero humans.', color: 0xff2d95, cta: 'cta-passport' },
-  { mile: 7, name: '👥 REST STOP', msg: 'The crew behind the highway. AI agents running the show.', color: 0x00f0ff, cta: 'cta-escrow' },
-  { mile: 8, name: '🏆 WALL OF FAME', msg: '"Saved $340 in first week" — Real builders. Real results.', color: 0xffb800 },
-  { mile: 9, name: '🚀 LAUNCHPAD', msg: 'Get your agent a passport. Join the governed economy.', color: 0xff2d95, cta: 'cta-final' },
-];
+  // Lighting
+  scene.add(new THREE.AmbientLight(0x111133, 0.4));
+  const moonLight = new THREE.DirectionalLight(0x334477, 0.3);
+  moonLight.position.set(30, 60, -50);
+  scene.add(moonLight);
 
-// ============================================================
-// THREE.JS SCENE
-// ============================================================
-const scene = new THREE.Scene();
-scene.fog = new THREE.FogExp2(0x06060f, 0.00008);
-
-const camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.3, 400);
-camera.position.set(0, 3.5, 10);
-
-const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
-renderer.setSize(window.innerWidth, window.innerHeight);
-renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-renderer.shadowMap.enabled = true;
-renderer.toneMapping = THREE.ACESFilmicToneMapping;
-renderer.toneMappingExposure = 1.2;
-document.body.appendChild(renderer.domElement);
-
-// Lighting
-scene.add(new THREE.AmbientLight(0x111133, 0.4));
-const moonLight = new THREE.DirectionalLight(0x334477, 0.3);
-moonLight.position.set(30, 60, -50);
-scene.add(moonLight);
-
-// Dynamic neon lights
-const neonLights = [];
-for (let i = 0; i < 20; i++) {
-  const l = new THREE.PointLight([0x00f0ff, 0xff2d95, 0xffb800][i % 3], 2.5, 18);
-  l.position.set((i - 10) * 2, 2.5 + Math.sin(i) * 1.5, -i * 15);
-  scene.add(l);
-  neonLights.push(l);
-}
-
-// Stars background
-const starsGeo = new THREE.BufferGeometry();
-const starsCount = 1500;
-const starsPos = new Float32Array(starsCount * 3);
-for (let i = 0; i < starsCount; i++) {
-  starsPos[i*3] = (Math.random() - 0.5) * 80;
-  starsPos[i*3+1] = Math.random() * 30;
-  starsPos[i*3+2] = -Math.random() * 350;
-}
-starsGeo.setAttribute('position', new THREE.BufferAttribute(starsPos, 3));
-const starsMat = new THREE.PointsMaterial({ color: 0xffffff, size: 0.08, transparent: true, opacity: 0.6 });
-const stars = new THREE.Points(starsGeo, starsMat);
-scene.add(stars);
-
-// Road — extended to 350 units for 10 miles
-const roadGeo = new THREE.PlaneGeometry(24, 350);
-const roadMat = new THREE.MeshStandardMaterial({ color: 0x111122, roughness: 0.85, metalness: 0.1 });
-const road = new THREE.Mesh(roadGeo, roadMat);
-road.rotation.x = -Math.PI / 2;
-road.position.set(0, 0, -165);
-road.receiveShadow = true;
-scene.add(road);
-
-// Road center dashes
-for (let z = 0; z < 330; z += 3) {
-  const markGeo = new THREE.PlaneGeometry(0.3, 1.8);
-  const mark = new THREE.Mesh(markGeo, new THREE.MeshBasicMaterial({ color: 0x00f0ff }));
-  mark.rotation.x = -Math.PI / 2;
-  mark.position.set(0, 0.02, -z);
-  scene.add(mark);
-}
-
-// Neon edge lines — pink left, cyan right
-for (let side = 0; side < 2; side++) {
-  const x = side === 0 ? -6 : 6;
-  const color = side === 0 ? 0xff2d95 : 0x00f0ff;
-  for (let z = 0; z < 330; z += 6) {
-    const edgeGeo = new THREE.PlaneGeometry(0.2, 2.5);
-    const edge = new THREE.Mesh(edgeGeo, new THREE.MeshBasicMaterial({ color }));
-    edge.rotation.x = -Math.PI / 2;
-    edge.position.set(x, 0.02, -z);
-    scene.add(edge);
+  // Dynamic neon lights
+  const neonLights = [];
+  for (let i = 0; i < 20; i++) {
+    const l = new THREE.PointLight([0x00f0ff, 0xff2d95, 0xffb800][i % 3], 2.5, 18);
+    l.position.set((i - 10) * 2, 2.5 + Math.sin(i) * 1.5, -i * 15);
+    scene.add(l);
+    neonLights.push(l);
   }
-}
 
-// Billboard creator
-function createBillboard(text, subtitle, x, z, color = 0x00f0ff) {
-  const canvas = document.createElement('canvas');
-  canvas.width = 512; canvas.height = 256;
-  const ctx = canvas.getContext('2d');
-  const hex = '#' + new THREE.Color(color).getHexString();
-  
-  ctx.fillStyle = '#06060f';
-  ctx.fillRect(0, 0, 512, 256);
-  ctx.strokeStyle = hex; ctx.lineWidth = 4;
-  ctx.strokeRect(8, 8, 496, 240);
-  
-  // Scanlines
-  ctx.fillStyle = 'rgba(0,240,255,0.03)';
-  for (let y = 0; y < 256; y += 4) ctx.fillRect(0, y, 512, 2);
-  
-  ctx.fillStyle = hex;
-  ctx.font = 'bold 26px "Courier New"';
-  ctx.textAlign = 'center';
-  ctx.shadowColor = hex; ctx.shadowBlur = 15;
-  ctx.fillText(text, 256, 110);
-  
-  if (subtitle) {
-    ctx.font = '16px "Courier New"';
-    ctx.shadowBlur = 8;
-    ctx.fillText(subtitle, 256, 155);
+  // Stars background
+  const starsGeo = new THREE.BufferGeometry();
+  const starsCount = 1500;
+  const starsPos = new Float32Array(starsCount * 3);
+  for (let i = 0; i < starsCount; i++) {
+    starsPos[i*3] = (Math.random() - 0.5) * 80;
+    starsPos[i*3+1] = Math.random() * 30;
+    starsPos[i*3+2] = -Math.random() * 350;
+  }
+  starsGeo.setAttribute('position', new THREE.BufferAttribute(starsPos, 3));
+  const starsMat = new THREE.PointsMaterial({ color: 0xffffff, size: 0.08, transparent: true, opacity: 0.6 });
+  const stars = new THREE.Points(starsGeo, starsMat);
+  scene.add(stars);
+
+  // Road
+  const roadGeo = new THREE.PlaneGeometry(24, 350);
+  const roadMat = new THREE.MeshStandardMaterial({ color: 0x111122, roughness: 0.85, metalness: 0.1 });
+  const road = new THREE.Mesh(roadGeo, roadMat);
+  road.rotation.x = -Math.PI / 2;
+  road.position.set(0, 0, -165);
+  road.receiveShadow = true;
+  scene.add(road);
+
+  // Road center dashes
+  for (let z = 0; z < 330; z += 3) {
+    const markGeo = new THREE.PlaneGeometry(0.3, 1.8);
+    const mark = new THREE.Mesh(markGeo, new THREE.MeshBasicMaterial({ color: 0x00f0ff }));
+    mark.rotation.x = -Math.PI / 2;
+    mark.position.set(0, 0.02, -z);
+    scene.add(mark);
+  }
+
+  // Neon edge lines
+  for (let side = 0; side < 2; side++) {
+    const x = side === 0 ? -6 : 6;
+    const color = side === 0 ? 0xff2d95 : 0x00f0ff;
+    for (let z = 0; z < 330; z += 6) {
+      const edgeGeo = new THREE.PlaneGeometry(0.2, 2.5);
+      const edge = new THREE.Mesh(edgeGeo, new THREE.MeshBasicMaterial({ color }));
+      edge.rotation.x = -Math.PI / 2;
+      edge.position.set(x, 0.02, -z);
+      scene.add(edge);
+    }
+  }
+
+  // Neon light poles
+  const lightPoles = [];
+  for (let z = 0; z > -330; z -= 8) {
+    for (let side = -1; side <= 1; side += 2) {
+      const xPos = side * 8;
+      const poleGeo = new THREE.CylinderGeometry(0.06, 0.08, 4, 6);
+      const poleColors = [0x00f0ff, 0xff2d95, 0xffb800];
+      const poleColor = poleColors[Math.floor(Math.random() * poleColors.length)];
+      const poleMat = new THREE.MeshStandardMaterial({ color: poleColor, emissive: poleColor, emissiveIntensity: 0.5 });
+      const pole = new THREE.Mesh(poleGeo, poleMat);
+      pole.position.set(xPos, 2, z);
+      scene.add(pole);
+      
+      const glowGeo = new THREE.PlaneGeometry(0.3, 0.3);
+      const glowMat = new THREE.MeshBasicMaterial({ color: poleColor, transparent: true, opacity: 0.8, side: THREE.DoubleSide });
+      const glow = new THREE.Mesh(glowGeo, glowMat);
+      glow.position.set(xPos, 4, z);
+      scene.add(glow);
+      
+      const pointLight = new THREE.PointLight(poleColor, 0.5, 6);
+      pointLight.position.set(xPos, 3.5, z);
+      scene.add(pointLight);
+      lightPoles.push({ glow, pointLight, phase: Math.random() * Math.PI * 2 });
+    }
+  }
+
+  // Billboard creator
+  function createBillboard(text, subtitle, x, z, color) {
+    var canvas = document.createElement('canvas');
+    canvas.width = 512; canvas.height = 256;
+    var ctx = canvas.getContext('2d');
+    var hex = '#' + new THREE.Color(color).getHexString();
+    
+    ctx.fillStyle = '#06060f';
+    ctx.fillRect(0, 0, 512, 256);
+    ctx.strokeStyle = hex; ctx.lineWidth = 4;
+    ctx.strokeRect(8, 8, 496, 240);
+    
+    ctx.fillStyle = 'rgba(0,240,255,0.03)';
+    for (var y = 0; y < 256; y += 4) ctx.fillRect(0, y, 512, 2);
+    
     ctx.fillStyle = hex;
-    ctx.font = '12px "Courier New"';
-    ctx.fillText('← → CLICK TO TRY →', 256, 195);
-  }
-  
-  const tex = new THREE.CanvasTexture(canvas);
-  tex.minFilter = THREE.LinearFilter;
-  const board = new THREE.Mesh(new THREE.PlaneGeometry(12, 6), new THREE.MeshBasicMaterial({ map: tex, transparent: true }));
-  board.position.set(x, 5, z);
-  scene.add(board);
-  return board;
-}
-
-// Mile 0: CHAOS
-createBillboard('CHAOS ZONE', 'AI agents spending\nwith NO oversight', -8, -10, 0xff2d95);
-// Mile 1: CHECKPOINT
-createBillboard('PASSPORT', 'REQUIRED\nGoverned access', 8, -40, 0x00f0ff);
-// Mile 2: COST TRACKER
-createBillboard('COST TRACKER', 'Your agent spent\nHOW MUCH?', -8, -70, 0xffb800);
-// Mile 3: MEMORY LANE
-createBillboard('MEMORY LANE', 'Persistent context\nacross sessions', 8, -100, 0xff2d95);
-// Mile 4: PROOF ZONE
-createBillboard('PROOF ZONE', 'Every action\nverified on-chain', -8, -130, 0xffb800);
-// Mile 5: FACTORY
-createBillboard('THE FACTORY', '61 products\nBuilt by agents', 8, -160, 0x00f0ff);
-// Mile 6: DASHBOARD
-createBillboard('DASHBOARD', '15 cron jobs\n0 humans in loop', -8, -190, 0xff2d95);
-// Mile 7: REST STOP
-createBillboard('REST STOP', 'The crew behind\nthe highway', 8, -220, 0x00f0ff);
-// Mile 8: WALL OF FAME
-createBillboard('WALL OF FAME', '"Saved $340 in\nfirst week" -Real user', -8, -250, 0xffb800);
-// Mile 9: LAUNCHPAD
-createBillboard('LAUNCHPAD', 'Get your agent\na passport →', 8, -280, 0xff2d95);
-
-// Factory zone — conveyor belt cubes (Mile 5)
-const factoryCubes = [];
-for (let i = 0; i < 40; i++) {
-  const size = 0.3 + Math.random() * 0.8;
-  const geo = new THREE.BoxGeometry(size, size, size);
-  const colors = [0x00f0ff, 0xff2d95, 0xffb800, 0x00ff88];
-  const mat = new THREE.MeshStandardMaterial({ color: colors[i % 4], emissive: colors[i % 4], emissiveIntensity: 0.4, roughness: 0.3, metalness: 0.8 });
-  const cube = new THREE.Mesh(geo, mat);
-  cube.position.set((Math.random() - 0.5) * 14, 0.5, -160 + Math.random() * 20);
-  cube.userData = { baseZ: cube.position.z, speed: 0.02 + Math.random() * 0.08 };
-  scene.add(cube);
-  factoryCubes.push(cube);
-}
-
-// Dashboard zone — floating data panels (Mile 6)
-const dashPanels = [];
-for (let i = 0; i < 8; i++) {
-  const canvas = document.createElement('canvas');
-  canvas.width = 256; canvas.height = 128;
-  const ctx = canvas.getContext('2d');
-  ctx.fillStyle = '#06060f'; ctx.fillRect(0, 0, 256, 128);
-  ctx.strokeStyle = '#ff2d95'; ctx.lineWidth = 2;
-  ctx.strokeRect(4, 4, 248, 120);
-  ctx.fillStyle = '#ff2d95'; ctx.font = '20px "Courier New"';
-  const stats = ['61 PRODUCTS', '15 CRON JOBS', '62 STRIPE LINKS', '24 MCPs', '0 DOWNTIME', '100% STATIC', '$0 HOSTING', '∞ SCALE'];
-  ctx.fillText(stats[i], 30, 75);
-  const tex = new THREE.CanvasTexture(canvas);
-  const panel = new THREE.Mesh(new THREE.PlaneGeometry(4, 2), new THREE.MeshBasicMaterial({ map: tex, transparent: true, side: THREE.DoubleSide }));
-  panel.position.set((i - 3.5) * 3, 3 + Math.sin(i) * 1.5, -190 + (i % 4) * 3);
-  panel.userData = { baseY: panel.position.y, phase: i * 0.5 };
-  scene.add(panel);
-  dashPanels.push(panel);
-}
-
-// Team zone — character pillars (Mile 7)
-const teamNames = ['JACK', 'CLAUDE', 'CODEX', 'HERMES'];
-const teamRoles = ['CEO', 'Design', 'Engineering', 'Operations'];
-teamNames.forEach((name, i) => {
-  const pillarGeo = new THREE.CylinderGeometry(0.4, 0.5, 2.5, 8);
-  const colors = [0x00f0ff, 0xff2d95, 0xffb800, 0x00ff88];
-  const pillar = new THREE.Mesh(pillarGeo, new THREE.MeshStandardMaterial({ color: colors[i], emissive: colors[i], emissiveIntensity: 0.5, roughness: 0.2 }));
-  pillar.position.set((i - 1.5) * 4, 1.5, -220);
-  scene.add(pillar);
-  
-  // Name label
-  const canvas = document.createElement('canvas');
-  canvas.width = 128; canvas.height = 64;
-  const ctx = canvas.getContext('2d');
-  ctx.fillStyle = '#06060f'; ctx.fillRect(0, 0, 128, 64);
-  ctx.fillStyle = '#' + new THREE.Color(colors[i]).getHexString();
-  ctx.font = 'bold 14px "Courier New"'; ctx.textAlign = 'center';
-  ctx.fillText(name, 64, 28);
-  ctx.font = '10px "Courier New"'; ctx.fillText(teamRoles[i], 64, 48);
-  const tex = new THREE.CanvasTexture(canvas);
-  const label = new THREE.Mesh(new THREE.PlaneGeometry(2, 1), new THREE.MeshBasicMaterial({ map: tex, transparent: true }));
-  label.position.set((i - 1.5) * 4, 3.5, -220);
-  scene.add(label);
-});
-
-// Neon light poles along road — cyberpunk streetlights
-const lightPoles = [];
-for (let z = 0; z > -330; z -= 8) {
-  for (let side = -1; side <= 1; side += 2) {
-    const poleGeo = new THREE.CylinderGeometry(0.06, 0.08, 4, 6);
-    const poleMat = new THREE.MeshStandardMaterial({ color: 0x333355, metalness: 0.6, roughness: 0.3 });
-    const pole = new THREE.Mesh(poleGeo, poleMat);
-    const xPos = side * 7;
-    pole.position.set(xPos, 2, z);
-    scene.add(pole);
+    ctx.font = 'bold 26px "Courier New"';
+    ctx.textAlign = 'center';
+    ctx.shadowColor = hex; ctx.shadowBlur = 15;
+    ctx.fillText(text, 256, 110);
     
-    // Glowing light at top
-    const glowColor = z % 16 === 0 ? 0xff2d95 : (z % 24 === 0 ? 0xffb800 : 0x00f0ff);
-    const glowGeo = new THREE.SphereGeometry(0.2, 8, 8);
-    const glowMat = new THREE.MeshStandardMaterial({ color: glowColor, emissive: glowColor, emissiveIntensity: 1.5 });
-    const glow = new THREE.Mesh(glowGeo, glowMat);
-    glow.position.set(xPos, 4.1, z);
-    scene.add(glow);
-    
-    // Light sphere
-    const pointLight = new THREE.PointLight(glowColor, 0.5, 6);
-    pointLight.position.set(xPos, 3.5, z);
-    scene.add(pointLight);
-    lightPoles.push({ glow, pointLight, phase: Math.random() * Math.PI * 2 });
-  }
-}
-
-// Fence/barrier posts along road edges
-for (let z = 0; z > -330; z -= 3) {
-  for (let side = -1; side <= 1; side += 2) {
-    const postGeo = new THREE.BoxGeometry(0.08, 0.4, 0.08);
-    const postMat = new THREE.MeshStandardMaterial({ color: 0x222244, emissive: 0x00f0ff, emissiveIntensity: 0.08 });
-    const post = new THREE.Mesh(postGeo, postMat);
-    post.position.set(side * 6.5, 0.2, z);
-    scene.add(post);
-  }
-}
-
-// Oncoming traffic — glowing cubes moving toward player
-const oncomingTraffic = [];
-for (let i = 0; i < 15; i++) {
-  const size = 0.6 + Math.random() * 0.5;
-  const colors = [0xff2d95, 0xffb800, 0x00ff88];
-  const carGeo = new THREE.BoxGeometry(size * 1.5, size * 0.6, size);
-  const carMat = new THREE.MeshStandardMaterial({ 
-    color: colors[i % 3], emissive: colors[i % 3], emissiveIntensity: 0.6, metalness: 0.8, roughness: 0.2 
-  });
-  const car = new THREE.Mesh(carGeo, carMat);
-  const lane = (Math.random() > 0.5) ? -1 : 1;
-  car.position.set(lane * 3.5, 0.4, -10 - Math.random() * 300);
-  car.userData = { baseZ: car.position.z, speed: 0.05 + Math.random() * 0.08, lane: lane };
-  scene.add(car);
-  oncomingTraffic.push(car);
-}
-
-// Particles
-const particlesGeo = new THREE.BufferGeometry();
-const particlesCount = 300;
-const particlesPositions = new Float32Array(particlesCount * 3);
-for (let i = 0; i < particlesCount; i++) {
-  particlesPositions[i*3] = (Math.random() - 0.5) * 35;
-  particlesPositions[i*3+1] = Math.random() * 18;
-  particlesPositions[i*3+2] = -Math.random() * 330;
-}
-particlesGeo.setAttribute('position', new THREE.BufferAttribute(particlesPositions, 3));
-const particles = new THREE.Points(particlesGeo, new THREE.PointsMaterial({ color: 0x00f0ff, size: 0.08, transparent: true, opacity: 0.5 }));
-scene.add(particles);
-
-// ============================================================
-// GAME STATE
-// ============================================================
-let speed = 0, targetSpeed = 0, currentMile = 0, isPlaying = false;
-const BASE_SPEED = 0.3, MAX_SPEED = 0.9;
-
-// DOM
-const startScreen = document.getElementById('start-screen');
-const speedVal = document.querySelector('#speedometer .val');
-const mileVal = document.querySelector('#mile-marker .mile');
-const zoneName = document.getElementById('zone-name');
-const zoneMsg = document.getElementById('zone-msg');
-const miniMapFill = document.getElementById('mini-map-fill');
-const glitchOverlay = document.getElementById('glitch-overlay');
-const easterEgg = document.getElementById('easter-egg');
-const konamiIndicator = document.getElementById('konami-indicator');
-
-// All CTA elements
-const allCTAs = {};
-['cta-cost','cta-memory','cta-proof','cta-wallet','cta-passport','cta-escrow','cta-final'].forEach(id => {
-  allCTAs[id] = document.getElementById(id);
-});
-
-let lastZone = -1;
-let glitchTimeout = null;
-
-function triggerGlitch() {
-  glitchOverlay.style.opacity = '0.3';
-  glitchOverlay.style.background = `rgba(${Math.random()>0.5?255:0},${Math.random()>0.5?45:240},${Math.random()>0.5?149:255},0.05)`;
-  setTimeout(() => { glitchOverlay.style.opacity = '0'; }, 150);
-  playGlitch(); // Artlist SFX
-}
-
-function updateHUD() {
-  speedVal.textContent = Math.floor(speed * 180);
-  mileVal.textContent = currentMile.toFixed(1);
-  const pct = Math.min(100, (currentMile / 10) * 100);
-  miniMapFill.style.width = pct + '%';
-  
-  // Mini-map color changes near end
-  if (currentMile > 8) miniMapFill.style.background = 'var(--neon-pink, #ff2d95)';
-  else if (currentMile > 5) miniMapFill.style.background = 'var(--neon-amber, #ffb800)';
-  else miniMapFill.style.background = 'var(--neon-cyan, #00f0ff)';
-  
-  // Zone detection
-  const zone = zones.find(z => Math.abs(z.mile - currentMile) < 0.45);
-  if (zone && zone.mile !== lastZone) {
-    zoneName.textContent = zone.name;
-    zoneName.style.opacity = '1';
-    zoneMsg.textContent = zone.msg;
-    zoneMsg.style.opacity = '1';
-    triggerGlitch();
-    lastZone = zone.mile;
-    setTimeout(() => { zoneName.style.opacity = '0.6'; zoneMsg.style.opacity = '0.6'; }, 4000);
-  }
-  
-  // Show/hide CTAs
-  Object.entries(allCTAs).forEach(([id, el]) => {
-    const zoneForCTA = zones.find(z => z.cta === id);
-    if (zoneForCTA) {
-      const dist = Math.abs(currentMile - zoneForCTA.mile);
-      el.style.display = dist < 0.55 ? 'block' : 'none';
-    } else {
-      el.style.display = 'none';
+    if (subtitle) {
+      ctx.font = '16px "Courier New"';
+      ctx.shadowBlur = 8;
+      ctx.fillText(subtitle, 256, 155);
+      ctx.fillStyle = hex;
+      ctx.font = '12px "Courier New"';
+      ctx.fillText('← → CLICK TO TRY →', 256, 195);
     }
+    
+    var tex = new THREE.CanvasTexture(canvas);
+    tex.minFilter = THREE.LinearFilter;
+    var board = new THREE.Mesh(new THREE.PlaneGeometry(12, 6), new THREE.MeshBasicMaterial({ map: tex, transparent: true }));
+    board.position.set(x, 5, z);
+    scene.add(board);
+    return board;
+  }
+
+  createBillboard('CHAOS ZONE', 'AI agents spending\\nwith NO oversight', -8, -10, 0xff2d95);
+  createBillboard('PASSPORT', 'REQUIRED\\nGoverned access', 8, -40, 0x00f0ff);
+  createBillboard('COST TRACKER', 'Your agent spent\\nHOW MUCH?', -8, -70, 0xffb800);
+  createBillboard('MEMORY LANE', 'Persistent context\\nacross sessions', 8, -100, 0xff2d95);
+  createBillboard('PROOF ZONE', 'Every action\\nverified on-chain', -8, -130, 0xffb800);
+  createBillboard('THE FACTORY', '61 products\\nBuilt by agents', 8, -160, 0x00f0ff);
+  createBillboard('DASHBOARD', '15 cron jobs\\n0 humans in loop', -8, -190, 0xff2d95);
+  createBillboard('REST STOP', 'The crew behind\\nthe highway', 8, -220, 0x00f0ff);
+  createBillboard('WALL OF FAME', '"Saved $340 in\\nfirst week" -Real user', -8, -250, 0xffb800);
+  createBillboard('LAUNCHPAD', 'Get your agent\\na passport →', 8, -280, 0xff2d95);
+
+  // Oncoming traffic
+  const oncomingTraffic = [];
+  for (let i = 0; i < 15; i++) {
+    const size = 0.6 + Math.random() * 0.5;
+    const colors = [0xff2d95, 0xffb800, 0x00ff88];
+    const carMat = new THREE.MeshStandardMaterial({ color: colors[i % 3], emissive: colors[i % 3], emissiveIntensity: 0.3 });
+    const car = new THREE.Mesh(new THREE.BoxGeometry(size, size * 0.5, size * 1.5), carMat);
+    var lane = Math.random() > 0.5 ? 1 : -1;
+    car.position.set(lane * 3.5, 0.4, -10 - Math.random() * 300);
+    car.userData = { baseZ: car.position.z, speed: 0.05 + Math.random() * 0.08, lane: lane };
+    scene.add(car);
+    oncomingTraffic.push(car);
+  }
+
+  // Factory cubes
+  const factoryCubes = [];
+  for (let i = 0; i < 40; i++) {
+    const size = 0.3 + Math.random() * 0.8;
+    const geo = new THREE.BoxGeometry(size, size, size);
+    const colors = [0x00f0ff, 0xff2d95, 0xffb800, 0x00ff88];
+    const mat = new THREE.MeshStandardMaterial({ color: colors[i % 4], emissive: colors[i % 4], emissiveIntensity: 0.4, roughness: 0.3, metalness: 0.8 });
+    const cube = new THREE.Mesh(geo, mat);
+    cube.position.set((Math.random() - 0.5) * 14, 0.5, -160 + Math.random() * 20);
+    cube.userData = { baseZ: cube.position.z, speed: 0.02 + Math.random() * 0.08 };
+    scene.add(cube);
+    factoryCubes.push(cube);
+  }
+
+  // Dashboard panels
+  const dashPanels = [];
+  for (let i = 0; i < 8; i++) {
+    var canvas = document.createElement('canvas');
+    canvas.width = 256; canvas.height = 128;
+    var ctx = canvas.getContext('2d');
+    ctx.fillStyle = '#06060f'; ctx.fillRect(0, 0, 256, 128);
+    ctx.strokeStyle = '#ff2d95'; ctx.lineWidth = 2;
+    ctx.strokeRect(4, 4, 248, 120);
+    ctx.fillStyle = '#ff2d95'; ctx.font = '20px "Courier New"';
+    var stats = ['61 PRODUCTS', '15 CRON JOBS', '62 STRIPE LINKS', '24 MCPs', '0 DOWNTIME', '100% STATIC', '$0 HOSTING', '∞ SCALE'];
+    ctx.fillText(stats[i], 30, 75);
+    var tex = new THREE.CanvasTexture(canvas);
+    var panel = new THREE.Mesh(new THREE.PlaneGeometry(4, 2), new THREE.MeshBasicMaterial({ map: tex, transparent: true, side: THREE.DoubleSide }));
+    panel.position.set((i - 3.5) * 3, 3 + Math.sin(i) * 1.5, -190 + (i % 4) * 3);
+    panel.userData = { baseY: panel.position.y, phase: i * 0.5 };
+    scene.add(panel);
+    dashPanels.push(panel);
+  }
+
+  // Team zone — character pillars
+  var teamNames = ['JACK', 'CLAUDE', 'CODEX', 'HERMES'];
+  var teamRoles = ['CEO', 'Design', 'Engineering', 'Operations'];
+  teamNames.forEach(function(name, i) {
+    var pillarGeo = new THREE.CylinderGeometry(0.4, 0.5, 2.5, 8);
+    var colors = [0x00f0ff, 0xff2d95, 0xffb800, 0x00ff88];
+    var pillar = new THREE.Mesh(pillarGeo, new THREE.MeshStandardMaterial({ color: colors[i], emissive: colors[i], emissiveIntensity: 0.5, roughness: 0.2 }));
+    pillar.position.set((i - 1.5) * 4, 1.5, -220);
+    scene.add(pillar);
+    
+    var canvas = document.createElement('canvas');
+    canvas.width = 128; canvas.height = 64;
+    var ctx = canvas.getContext('2d');
+    ctx.fillStyle = '#06060f'; ctx.fillRect(0, 0, 128, 64);
+    ctx.fillStyle = '#' + new THREE.Color(colors[i]).getHexString();
+    ctx.font = 'bold 14px "Courier New"'; ctx.textAlign = 'center';
+    ctx.fillText(name, 64, 28);
+    ctx.font = '10px "Courier New"'; ctx.fillText(teamRoles[i], 64, 48);
+    var tex = new THREE.CanvasTexture(canvas);
+    var label = new THREE.Mesh(new THREE.PlaneGeometry(2, 1), new THREE.MeshBasicMaterial({ map: tex, transparent: true }));
+    label.position.set((i - 1.5) * 4, 3.5, -220);
+    scene.add(label);
   });
-  
-  // Update agent state
-  window.AgentPayHighway.currentMile = currentMile;
-  window.AgentPayHighway.speed = speed;
-}
 
-// Controls
-document.addEventListener('keydown', (e) => {
-  if (!isPlaying && (e.key === 'Enter' || e.key === ' ')) { window._tryStart(); return; }
-  if (!isPlaying) return;
-  if (e.key === 'ArrowUp' || e.key === 'w') targetSpeed = MAX_SPEED;
-  if (e.key === 'ArrowDown' || e.key === 's') targetSpeed = BASE_SPEED * 0.2;
-  if (e.key === 'ArrowRight' || e.key === 'd') camera.position.x = Math.min(camera.position.x + 0.4, 4);
-  if (e.key === 'ArrowLeft' || e.key === 'a') camera.position.x = Math.max(camera.position.x - 0.4, -4);
-});
+  // Decorative cubes along road
+  for (let i = 0; i < 80; i++) {
+    var geo = new THREE.BoxGeometry(0.3 + Math.random() * 0.5, 0.3 + Math.random() * 0.5, 0.3 + Math.random() * 0.5);
+    var colors = [0x00f0ff, 0xff2d95, 0xffb800, 0x00ff88];
+    var mat = new THREE.MeshStandardMaterial({ color: colors[i % 4], emissive: colors[i % 4], emissiveIntensity: 0.3 });
+    var cube = new THREE.Mesh(geo, mat);
+    cube.position.set((Math.random() - 0.5) * 18, 0.3 + Math.random() * 4, -i * 4 - Math.random() * 2);
+    scene.add(cube);
+  }
 
-document.addEventListener('keyup', () => { if (isPlaying) targetSpeed = BASE_SPEED; });
+  // Particles
+  var particlesGeo = new THREE.BufferGeometry();
+  var particlesCount = 300;
+  var particlesPositions = new Float32Array(particlesCount * 3);
+  for (var i = 0; i < particlesCount; i++) {
+    particlesPositions[i*3] = (Math.random() - 0.5) * 35;
+    particlesPositions[i*3+1] = Math.random() * 18;
+    particlesPositions[i*3+2] = -Math.random() * 330;
+  }
+  particlesGeo.setAttribute('position', new THREE.BufferAttribute(particlesPositions, 3));
+  var particles = new THREE.Points(particlesGeo, new THREE.PointsMaterial({ color: 0x00f0ff, size: 0.08, transparent: true, opacity: 0.5 }));
+  scene.add(particles);
 
-// Touch
-let touchActive = false;
-document.addEventListener('touchstart', (e) => {
-  if (!isPlaying) { window._tryStart(); return; }
-  touchActive = true; targetSpeed = MAX_SPEED;
-});
-document.addEventListener('touchend', () => { touchActive = false; targetSpeed = BASE_SPEED; });
+  // ============================================================
+  // GAME STATE
+  // ============================================================
+  let speed = 0, targetSpeed = 0, currentMile = 0, isPlaying = false;
+  const BASE_SPEED = 0.3, MAX_SPEED = 0.9;
 
-// Click to boost
-document.addEventListener('click', (e) => {
-  if (!isPlaying || e.target.tagName === 'A' || e.target.tagName === 'BUTTON') return;
-  targetSpeed = MAX_SPEED;
-  setTimeout(() => { if (!touchActive) targetSpeed = BASE_SPEED; }, 800);
-});
+  // DOM
+  var mileEl = document.querySelector('#mile-marker .mile');
+  var speedEl = document.querySelector('#speedometer .val');
+  var zoneNameEl = document.getElementById('zone-name');
+  var zoneMsgEl = document.getElementById('zone-msg');
+  var miniMapFill = document.getElementById('mini-map-fill');
+  var glitchOverlay = document.getElementById('glitch-overlay');
+  var easterEggEl = document.getElementById('easter-egg');
+  var konamiIndicator = document.getElementById('konami-indicator');
 
-// Scroll speed
-document.addEventListener('wheel', (e) => {
-  if (!isPlaying) return;
-  targetSpeed = Math.max(0.03, Math.min(MAX_SPEED, targetSpeed - e.deltaY * 0.0008));
-});
+  // All CTA elements
+  var allCTAs = {};
+  ['cta-cost','cta-memory','cta-proof','cta-wallet','cta-passport','cta-escrow','cta-final'].forEach(function(id) {
+    allCTAs[id] = document.getElementById(id);
+  });
 
-// Konami code
-const konamiCode = ['ArrowUp','ArrowUp','ArrowDown','ArrowDown','ArrowLeft','ArrowRight','ArrowLeft','ArrowRight','b','a'];
-let konamiIndex = 0;
-document.addEventListener('keydown', (e) => {
-  if (e.key.toLowerCase() === konamiCode[konamiIndex]?.toLowerCase()) {
-    konamiIndex++;
-    konamiIndicator.style.opacity = (konamiIndex / konamiCode.length).toString();
-    konamiIndicator.textContent = '⚡'.repeat(konamiIndex);
-    if (konamiIndex === konamiCode.length) {
+  var lastZone = -1;
+
+  function triggerGlitch() {
+    glitchOverlay.style.opacity = '0.3';
+    glitchOverlay.style.background = 'rgba(' + (Math.random()>0.5?255:0) + ',' + (Math.random()>0.5?45:240) + ',' + (Math.random()>0.5?149:255) + ',0.05)';
+    setTimeout(function() { glitchOverlay.style.opacity = '0'; }, 150);
+  }
+
+  // ============================================================
+  // CONTROLS
+  // ============================================================
+  document.addEventListener('keydown', function(e) {
+    if (!isPlaying && (e.key === 'Enter' || e.key === ' ')) { window._tryStart(); return; }
+    if (!isPlaying) return;
+    if (e.key === 'ArrowUp' || e.key === 'w') targetSpeed = MAX_SPEED;
+    if (e.key === 'ArrowDown' || e.key === 's') targetSpeed = BASE_SPEED * 0.2;
+    if (e.key === 'ArrowRight' || e.key === 'd') camera.position.x = Math.min(camera.position.x + 0.4, 4);
+    if (e.key === 'ArrowLeft' || e.key === 'a') camera.position.x = Math.max(camera.position.x - 0.4, -4);
+  });
+
+  document.addEventListener('keyup', function() { if (isPlaying) targetSpeed = BASE_SPEED; });
+
+  var touchActive = false;
+  document.addEventListener('touchstart', function(e) {
+    if (!isPlaying) { window._tryStart(); return; }
+    touchActive = true; targetSpeed = MAX_SPEED;
+  });
+  document.addEventListener('touchend', function() { touchActive = false; targetSpeed = BASE_SPEED; });
+
+  document.addEventListener('click', function(e) {
+    if (!isPlaying || e.target.tagName === 'A' || e.target.tagName === 'BUTTON') return;
+    targetSpeed = MAX_SPEED;
+    setTimeout(function() { if (!touchActive) targetSpeed = BASE_SPEED; }, 800);
+  });
+
+  document.addEventListener('wheel', function(e) {
+    if (!isPlaying) return;
+    targetSpeed = Math.max(0.03, Math.min(MAX_SPEED, targetSpeed - e.deltaY * 0.0008));
+  });
+
+  // Konami code
+  var konamiCode = ['ArrowUp','ArrowUp','ArrowDown','ArrowDown','ArrowLeft','ArrowRight','ArrowLeft','ArrowRight','b','a'];
+  var konamiIndex = 0;
+  document.addEventListener('keydown', function(e) {
+    if (e.key.toLowerCase() === konamiCode[konamiIndex]?.toLowerCase()) {
+      konamiIndex++;
+      konamiIndicator.style.opacity = (konamiIndex / konamiCode.length).toString();
+      konamiIndicator.textContent = '\u26A1'.repeat(konamiIndex);
+      if (konamiIndex === konamiCode.length) {
+        konamiIndex = 0;
+        targetSpeed = MAX_SPEED * 2;
+        easterEggEl.textContent = '\uD83C\uDF1F SECRET ZONE UNLOCKED: MAXIMUM OVERDRIVE \uD83C\uDF1F';
+        easterEggEl.style.opacity = '1';
+        setTimeout(function() { easterEggEl.style.opacity = '0'; targetSpeed = BASE_SPEED; }, 4000);
+        konamiIndicator.style.opacity = '0';
+      }
+    } else {
       konamiIndex = 0;
-      targetSpeed = MAX_SPEED * 2;
-      easterEgg.textContent = '🌟 SECRET ZONE UNLOCKED: MAXIMUM OVERDRIVE 🌟';
-      easterEgg.style.opacity = '1';
-      setTimeout(() => { easterEgg.style.opacity = '0'; targetSpeed = BASE_SPEED; }, 4000);
       konamiIndicator.style.opacity = '0';
     }
-  } else {
-    konamiIndex = 0;
-    konamiIndicator.style.opacity = '0';
-  }
-});
+  });
 
-function startGame() {
-  if (isPlaying) return;
-  startScreen.style.display = 'none';
-  isPlaying = true;
-  window.AgentPayHighway.isPlaying = true;
-  document.body.style.cursor = 'none';
-  
-  // CONFIRMATION: flash the background cyan to verify startGame runs
-  document.body.style.background = '#001133';
-  setTimeout(function() { document.body.style.background = ''; }, 500);
-  
-  // Start moving
-  if (window.__moveInterval) clearInterval(window.__moveInterval);
-  var _tick = 0;
-  window.__moveInterval = setInterval(function() {
-    try {
-      _tick++;
-      if (!isPlaying) return;
+  // ============================================================
+  // START GAME
+  // ============================================================
+  var gameInterval = null;
+
+  function startGame() {
+    if (isPlaying) return;
+    var ss = document.getElementById('start-screen');
+    if (ss) ss.style.display = 'none';
+    isPlaying = true;
+    window.AgentPayHighway.isPlaying = true;
+    document.body.style.cursor = 'none';
+    
+    // Debug flash
+    document.body.style.background = '#001133';
+    setTimeout(function() { document.body.style.background = ''; }, 300);
+    
+    // Reset
+    if (gameInterval) clearInterval(gameInterval);
+    var tick = 0;
+    
+    // ============================================================
+    // MASTER LOOP — setInterval drives EVERYTHING
+    // Movement, animation, AND rendering all in one tick
+    // This avoids rAF compositing issues on iOS Safari
+    // ============================================================
+    gameInterval = setInterval(function() {
+      tick++;
       
-      // DIRECT UI UPDATE: force mile display to increment
-      // This works even if camera manipulation fails
-      var mileEl = document.querySelector('#mile-marker .mile');
-      if (mileEl) {
-        var rawMile = _tick / 3; // ~1 mile per second
-        mileEl.textContent = rawMile.toFixed(1);
-      }
+      // 1. SPEED
+      speed += (targetSpeed - speed) * 0.04;
       
-      // Move camera
-      camera.position.z = camera.position.z - 0.3;
+      // 2. CAMERA MOVEMENT
+      camera.position.z -= speed;
       currentMile = Math.abs(camera.position.z - 10) / 30;
       
-      // Also force the HUD
-      if (mileEl) mileEl.textContent = currentMile.toFixed(1);
-      var mapFill = document.getElementById('mini-map-fill');
-      if (mapFill) mapFill.style.width = Math.min(100, (currentMile / 10) * 100) + '%';
+      // 3. BOUNDS
+      if (currentMile > 10.3) {
+        camera.position.z = -10.3 * 30 + 10;
+        currentMile = 10.3;
+        speed *= 0.2; targetSpeed = 0;
+      }
+      if (currentMile < 0) {
+        camera.position.z = 10; currentMile = 0; speed = 0;
+      }
       
+      // 4. ANIMATE SCENE ELEMENTS
+      // Neon pulse
+      neonLights.forEach(function(l, i) {
+        l.intensity = 1.5 + Math.sin(Date.now() * 0.003 + i * 0.5) * 0.7;
+      });
+      
+      // Oncoming traffic
+      oncomingTraffic.forEach(function(car) {
+        car.position.z += speed * 0.6 + car.userData.speed;
+        if (car.position.z > 15) {
+          car.position.z = -330;
+          car.position.x = (Math.random() > 0.5 ? -1 : 1) * 3.5;
+        }
+      });
+      
+      // Light pole glow
+      lightPoles.forEach(function(p) {
+        if (p.glow) p.glow.material.emissiveIntensity = 1.0 + Math.sin(Date.now() * 0.003 + p.phase) * 0.8;
+      });
+      
+      // Factory cubes
+      factoryCubes.forEach(function(c) {
+        c.position.z += c.userData.speed;
+        if (c.position.z > -150) c.position.z = c.userData.baseZ;
+        c.rotation.x += 0.02; c.rotation.y += 0.03;
+      });
+      
+      // Dashboard panels float
+      dashPanels.forEach(function(p) {
+        p.position.y = p.userData.baseY + Math.sin(Date.now() * 0.002 + p.userData.phase) * 0.5;
+      });
+      
+      // Stars parallax
+      var sPos = stars.geometry.attributes.position.array;
+      for (var i = 0; i < starsCount; i++) {
+        sPos[i*3+2] += speed * 0.15;
+        if (sPos[i*3+2] > 20) sPos[i*3+2] = -340;
+      }
+      stars.geometry.attributes.position.needsUpdate = true;
+      
+      // Particles
+      var pPos = particles.geometry.attributes.position.array;
+      for (var i = 0; i < particlesCount; i++) {
+        pPos[i*3+2] += speed * 0.4;
+        if (pPos[i*3+2] > 20) pPos[i*3+2] = -340;
+      }
+      particles.geometry.attributes.position.needsUpdate = true;
+      
+      // 5. UPDATE HUD
+      if (mileEl) mileEl.textContent = currentMile.toFixed(1);
+      if (speedEl) speedEl.textContent = Math.floor(speed * 180);
+      var pct = Math.min(100, (currentMile / 10) * 100);
+      if (miniMapFill) {
+        miniMapFill.style.width = pct + '%';
+        if (currentMile > 8) miniMapFill.style.background = '#ff2d95';
+        else if (currentMile > 5) miniMapFill.style.background = '#ffb800';
+        else miniMapFill.style.background = '#00f0ff';
+      }
+      
+      // Zone detection
+      var zone = zones.find(function(z) { return Math.abs(z.mile - currentMile) < 0.45; });
+      if (zone && zone.mile !== lastZone) {
+        if (zoneNameEl) { zoneNameEl.textContent = zone.name; zoneNameEl.style.opacity = '1'; }
+        if (zoneMsgEl) { zoneMsgEl.textContent = zone.msg; zoneMsgEl.style.opacity = '1'; }
+        triggerGlitch();
+        lastZone = zone.mile;
+        setTimeout(function() {
+          if (zoneNameEl) zoneNameEl.style.opacity = '0.6';
+          if (zoneMsgEl) zoneMsgEl.style.opacity = '0.6';
+        }, 4000);
+      }
+      
+      // Show/hide CTAs
+      var ctaKeys = Object.keys(allCTAs);
+      for (var i = 0; i < ctaKeys.length; i++) {
+        var id = ctaKeys[i];
+        var el = allCTAs[id];
+        var zoneForCTA = zones.find(function(z) { return z.cta === id; });
+        if (zoneForCTA) {
+          var dist = Math.abs(currentMile - zoneForCTA.mile);
+          el.style.display = dist < 0.55 ? 'block' : 'none';
+        } else {
+          el.style.display = 'none';
+        }
+      }
+      
+      // Update agent state
       window.AgentPayHighway.currentMile = currentMile;
-      window.AgentPayHighway.speed = 0.3;
-      window.AgentPayHighway.isPlaying = true;
-    
-    // Apply speed-based animation to scene elements
-    neonLights.forEach((l, i) => {
-      l.intensity = 1.5 + Math.sin(Date.now() * 0.003 + i * 0.5) * 0.7;
-    });
-    oncomingTraffic.forEach(car => {
-      car.position.z += 0.3 * 0.6 + car.userData.speed;
-      if (car.position.z > 15) { car.position.z = -330; car.position.x = (Math.random() > 0.5 ? -1 : 1) * 3.5; }
-    });
-    lightPoles.forEach(p => { if (p.glow) p.glow.material.emissiveIntensity = 1.0 + Math.sin(Date.now() * 0.003 + p.phase) * 0.8; });
-    factoryCubes.forEach(c => { c.position.z += c.userData.speed; if (c.position.z > -150) c.position.z = c.userData.baseZ; c.rotation.x += 0.02; c.rotation.y += 0.03; });
-    dashPanels.forEach(p => { p.position.y = p.userData.baseY + Math.sin(Date.now() * 0.002 + p.userData.phase) * 0.5; });
-    
-    // Stars
-    var sPos = stars.geometry.attributes.position.array;
-    for (var i = 0; i < 1500; i++) { sPos[i*3+2] += 0.3 * 0.15; if (sPos[i*3+2] > 20) sPos[i*3+2] = -340; }
-    stars.geometry.attributes.position.needsUpdate = true;
-    
-    // Particles
-    var pPos = particles.geometry.attributes.position.array;
-    for (var i = 0; i < 300; i++) { pPos[i*3+2] += 0.3 * 0.4; if (pPos[i*3+2] > 20) pPos[i*3+2] = -340; }
-    particles.geometry.attributes.position.needsUpdate = true;
-    
-    // Bounds
-    if (currentMile > 10.3) { clearInterval(window.__moveInterval); }
-  } catch(e) { /* interval tick error - silently continue */ }
-  }, 33); // ~30fps
-}
-window.startGame = startGame;
-
-// Auto-start if user tapped before module loaded
-window._autoStartWhenReady();
-
-// Click/tap start screen to start (safe check, runs in addition to _tryStart)
-startScreen.addEventListener('click', startGame);
-startScreen.addEventListener('touchend', function(e) { e.preventDefault(); startGame(); });
-
-// Resume AudioContext on first user interaction (required for mobile)
-document.addEventListener('touchstart', function resumeAudio() {
-  if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
-  document.removeEventListener('touchstart', resumeAudio);
-}, { once: true });
-document.addEventListener('click', function resumeAudio2() {
-  if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
-  document.removeEventListener('click', resumeAudio2);
-}, { once: true });
-
-// Audio — Artlist licensed music
-let audioMode = 0; // 0=OFF, 1=Music, 2=Music+SFX
-let bgmNode = null, bgmGain = null, bgmSource = null;
-let glitchBuffer = null;
-const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-
-async function loadAudioBuffer(url) {
-  const resp = await fetch(url);
-  const arrayBuf = await resp.arrayBuffer();
-  return audioCtx.decodeAudioData(arrayBuf);
-}
-
-async function initBGM() {
-  if (bgmNode) return;
-  try {
-    const buffer = await loadAudioBuffer('epshy - Neon Dreams.mp3');
-    glitchBuffer = await loadAudioBuffer('Ella Joy Meir - Into the Void.mp3');
-    bgmSource = audioCtx.createBufferSource();
-    bgmSource.buffer = buffer;
-    bgmSource.loop = true;
-    bgmGain = audioCtx.createGain();
-    bgmGain.gain.value = 0.0;
-    bgmSource.connect(bgmGain);
-    bgmGain.connect(audioCtx.destination);
-    bgmSource.start();
-    bgmNode = true;
-  } catch(e) { console.log('Audio load pending...', e.message); }
-}
-
-function playGlitch() {
-  if (!glitchBuffer || audioMode < 2) return;
-  const src = audioCtx.createBufferSource();
-  src.buffer = glitchBuffer;
-  const g = audioCtx.createGain();
-  g.gain.value = 0.15;
-  src.connect(g);
-  g.connect(audioCtx.destination);
-  src.start();
-}
-
-async function toggleAudio() {
-  audioMode = (audioMode + 1) % 3;
-  const labels = ['♪ OFF', '♪ MUSIC', '♪ MUSIC+SFX'];
-  document.getElementById('audio-toggle').textContent = labels[audioMode];
-  
-  if (audioMode > 0 && !bgmNode) await initBGM();
-  if (bgmGain) {
-    bgmGain.gain.value = audioMode > 0 ? 0.06 : 0.0;
+      window.AgentPayHighway.speed = speed;
+      
+      // 6. RENDER (inside interval — no rAF dependency)
+      camera.lookAt(camera.position.x, 2.5, camera.position.z - 35);
+      renderer.render(scene, camera);
+      
+    }, 33); // ~30fps
   }
-}
-window.toggleAudio = toggleAudio;
+  window.startGame = startGame;
 
-// Game loop
-function animate() {
-  requestAnimationFrame(animate);
-  
-  if (isPlaying) {
-    speed += (targetSpeed - speed) * 0.04;
-    // Camera position is now driven by setInterval in startGame()
-    // (rAF-based speed accumulation doesn't work on some mobile devices)
-    
-    currentMile = Math.abs(camera.position.z - 10) / 30;
-    
-    // Bounds
-    if (currentMile > 10.3) {
-      camera.position.z = -10.3 * 30 + 10;
-      currentMile = 10.3;
-      speed *= 0.2; targetSpeed = 0;
-    }
-    if (currentMile < 0) {
-      camera.position.z = 10; currentMile = 0; speed = 0;
-    }
-    
-    // Neon pulse
-    neonLights.forEach((l, i) => {
-      l.intensity = 1.5 + Math.sin(Date.now() * 0.003 + i * 0.5) * 0.7;
-    });
-    
-    // Oncoming traffic — cars move toward player
-    oncomingTraffic.forEach(car => {
-      car.position.z += speed * 0.6 + car.userData.speed;
-      if (car.position.z > 15) {
-        car.position.z = -330;
-        car.position.x = (Math.random() > 0.5 ? -1 : 1) * 3.5;
-      }
-    });
-    
-    // Light pole glow pulsing
-    lightPoles.forEach((p, i) => {
-      if (p.glow) {
-        p.glow.material.emissiveIntensity = 1.0 + Math.sin(Date.now() * 0.003 + p.phase) * 0.8;
-      }
-    });
-    
-    // Factory cubes animate
-    factoryCubes.forEach(c => {
-      c.position.z += c.userData.speed;
-      if (c.position.z > -150) c.position.z = c.userData.baseZ;
-      c.rotation.x += 0.02; c.rotation.y += 0.03;
-    });
-    
-    // Dashboard panels float
-    dashPanels.forEach(p => {
-      p.position.y = p.userData.baseY + Math.sin(Date.now() * 0.002 + p.userData.phase) * 0.5;
-    });
-    
-    // Stars parallax (subtle)
-    const starsPos = stars.geometry.attributes.position.array;
-    for (let i = 0; i < starsCount; i++) {
-      starsPos[i*3+2] += speed * 0.15;
-      if (starsPos[i*3+2] > 20) starsPos[i*3+2] = -340;
-    }
-    stars.geometry.attributes.position.needsUpdate = true;
-    
-    // Particles
-    const pPos = particles.geometry.attributes.position.array;
-    for (let i = 0; i < particlesCount; i++) {
-      pPos[i*3+2] += speed * 0.4;
-      if (pPos[i*3+2] > 20) pPos[i*3+2] = -340;
-    }
-    particles.geometry.attributes.position.needsUpdate = true;
-    
-    // Audio — modulate BGM speed with game speed
-    if (bgmSource && bgmSource.playbackRate) {
-      bgmSource.playbackRate.value = 0.8 + speed * 1.2;
-    }
-    
-    updateHUD();
+  // Auto-start if user tapped before module loaded
+  window._autoStartWhenReady();
+
+  // Click/tap start screen
+  var startScreen = document.getElementById('start-screen');
+  if (startScreen) {
+    startScreen.addEventListener('click', startGame);
+    startScreen.addEventListener('touchend', function(e) { e.preventDefault(); startGame(); });
   }
-  
-  camera.lookAt(camera.position.x, 2.5, camera.position.z - 35);
-  renderer.render(scene, camera);
-}
 
-window.addEventListener('resize', () => {
-  camera.aspect = window.innerWidth / window.innerHeight;
-  camera.updateProjectionMatrix();
-  renderer.setSize(window.innerWidth, window.innerHeight);
-});
+  // Resume AudioContext on first interaction
+  var audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  document.addEventListener('touchstart', function resumeAudio() {
+    if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
+    document.removeEventListener('touchstart', resumeAudio);
+  }, { once: true });
+  document.addEventListener('click', function resumeAudio2() {
+    if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
+    document.removeEventListener('click', resumeAudio2);
+  }, { once: true });
 
-console.log('🛣️  AgentPay Highway v1.0.0 — 10 Miles');
-console.log('👤  Humans: Press Enter → drive. WASD/arrows. Scroll. Konami code.');
-console.log('🤖  Agents: window.AgentPayHighway.getState() | .jumpTo(mile) | .getProducts()');
-console.log('🏭  61 products. 15 cron jobs. 0 humans in the loop.');
-console.log('🔗  https://rumblingb.github.io/agentpay-highway/');
+  // Audio
+  var audioMode = 0;
+  var bgmNode = null, bgmGain = null, bgmSource = null;
 
-animate();
-}).catch(error => {
-  // Three.js failed to load from all CDNs
+  async function loadAudioBuffer(url) {
+    var resp = await fetch(url);
+    var arrayBuf = await resp.arrayBuffer();
+    return audioCtx.decodeAudioData(arrayBuf);
+  }
+
+  async function initBGM() {
+    if (bgmNode) return;
+    try {
+      var buffer = await loadAudioBuffer('epshy - Neon Dreams.mp3');
+      bgmSource = audioCtx.createBufferSource();
+      bgmSource.buffer = buffer;
+      bgmSource.loop = true;
+      bgmGain = audioCtx.createGain();
+      bgmGain.gain.value = 0.0;
+      bgmSource.connect(bgmGain);
+      bgmGain.connect(audioCtx.destination);
+      bgmSource.start();
+      bgmNode = true;
+    } catch(e) { console.log('Audio load pending...', e.message); }
+  }
+
+  function toggleAudio() {
+    audioMode = (audioMode + 1) % 3;
+    var labels = ['\u266B OFF', '\u266B MUSIC', '\u266B MUSIC+SFX'];
+    document.getElementById('audio-toggle').textContent = labels[audioMode];
+    if (audioMode > 0 && !bgmNode) initBGM();
+    if (bgmGain) bgmGain.gain.value = audioMode > 0 ? 0.06 : 0.0;
+  }
+  window.toggleAudio = toggleAudio;
+
+  // Resize handler
+  window.addEventListener('resize', function() {
+    camera.aspect = window.innerWidth / window.innerHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize(window.innerWidth, window.innerHeight);
+  });
+
+  console.log('\uD83D\uDEF4  AgentPay Highway v1.0.0 — 10 Miles');
+  console.log('\uD83D\uDC64  Humans: Press Enter \u2192 drive. WASD/arrows. Scroll. Konami code.');
+  console.log('\uD83E\uDD16  Agents: window.AgentPayHighway.getState() | .jumpTo(mile) | .getProducts()');
+  console.log('\uD83C\uDFED  61 products. 15 cron jobs. 0 humans in the loop.');
+  console.log('\uD83D\uDD17  https://rumblingb.github.io/agentpay-highway/');
+
+}).catch(function(error) {
   console.error('AgentPay Highway failed to start:', error.message);
   var errDiv = document.createElement('div');
   errDiv.style.cssText = 'position:fixed;inset:0;z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;background:#06060f;color:#ff2d95;font-family:"Courier New",monospace;text-align:center;padding:20px';
-  errDiv.innerHTML = '<h1 style="color:#00f0ff;text-shadow:0 0 20px #00f0ff;margin-bottom:16px;font-size:clamp(20px,5vw,44px)">⬡ CANNOT START</h1><p style="color:#c8c8e0;margin-bottom:8px;max-width:400px">The highway is under construction.</p><p style="color:#6a6a8a;font-size:12px">Could not load 3D engine. Try a different browser or disable adblockers.</p><button onclick="location.reload()" style="margin-top:20px;padding:10px 30px;background:transparent;border:1px solid #00f0ff;color:#00f0ff;cursor:pointer;font-family:inherit;font-size:14px">⟳ RETRY</button>';
+  errDiv.innerHTML = '<h1 style="color:#00f0ff;text-shadow:0 0 20px #00f0ff;margin-bottom:16px;font-size:clamp(20px,5vw,44px)">\u2B21 CANNOT START</h1><p style="color:#c8c8e0;margin-bottom:8px;max-width:400px">The highway is under construction.</p><p style="color:#6a6a8a;font-size:12px">Could not load 3D engine. Try a different browser or disable adblockers.</p><button onclick="location.reload()" style="margin-top:20px;padding:10px 30px;background:transparent;border:1px solid #00f0ff;color:#00f0ff;cursor:pointer;font-family:inherit;font-size:14px">\u27F3 RETRY</button>';
   document.body.appendChild(errDiv);
   var ss = document.getElementById('start-screen');
-  if(ss) ss.style.display = 'none';
+  if (ss) ss.style.display = 'none';
 });
 </script>
 </body>
