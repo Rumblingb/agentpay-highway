@@ -394,7 +394,7 @@ let isInvincible=false,playerTargetX=0;
 let boostActive=false,boostTimer=0,boostCooldown=0;
 const BOOST_DUR=60,BOOST_CD=180;
 let combo=1,comboTimer=0;
-let tick=0,gameInterval=null,lastZone=-1;
+let tick=0,rafId=null,lastZone=-1;
 
 const $=id=>document.getElementById(id);
 const mileEl=$('mile-val'),speedEl=$('speed-val'),zoneNameEl=$('zone-name'),zoneMsgEl=$('zone-msg');
@@ -498,7 +498,7 @@ function takeDamage(){
 }
 function saveHS(){const prev=parseInt(localStorage.getItem('ap_hw_hs')||'0');if(score>prev){localStorage.setItem('ap_hw_hs',score);return true;}return false;}
 function endGame(){
-  isPlaying=false;if(gameInterval){clearInterval(gameInterval);gameInterval=null;}
+  isPlaying=false;if(rafId){cancelAnimationFrame(rafId);rafId=null;}
   score+=Math.floor(currentMile*50);
   const rec=saveHS();
   $('go-score').textContent=score.toLocaleString();$('go-dist').textContent=currentMile.toFixed(1);$('go-tok').textContent=tokensCollected;
@@ -506,7 +506,7 @@ function endGame(){
   goScreen.classList.add('show');window.AgentPayHighway.isPlaying=false;
 }
 function doVictory(){
-  isPlaying=false;if(gameInterval){clearInterval(gameInterval);gameInterval=null;}
+  isPlaying=false;if(rafId){cancelAnimationFrame(rafId);rafId=null;}
   score+=500+lives*200+tokensCollected*50;sfx.win();
   const rec=saveHS();
   $('vs-score').textContent=score.toLocaleString();$('vs-tok').textContent=tokensCollected;$('vs-lives').textContent=lives;
@@ -537,8 +537,10 @@ function startGame(){
   speedLines.classList.remove('on');comboEl.style.opacity='0';
   window.AgentPayHighway.isPlaying=true;window.AgentPayHighway.lives=3;window.AgentPayHighway.score=0;window.AgentPayHighway.tokensCollected=0;
   document.body.style.cursor='none';
-  if(gameInterval)clearInterval(gameInterval);
-  gameInterval=setInterval(gameTick,33);
+  if(rafId)cancelAnimationFrame(rafId);
+  let _lastTs=0;
+  function _loop(ts){if(!isPlaying)return;if(ts-_lastTs>=32){_lastTs=ts;gameTick();}rafId=requestAnimationFrame(_loop);}
+  rafId=requestAnimationFrame(_loop);
 }
 window.startGame=startGame;
 $('go-restart').addEventListener('click',startGame);
