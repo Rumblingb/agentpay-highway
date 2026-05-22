@@ -5,180 +5,841 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<title>AgentPay Highway — Governed AI Agent Economy</title>
-<meta name="description" content="Drive the AgentPay Highway. 10-mile cyberpunk sprint. Collect agent tokens. Dodge traffic. Boost to victory.">
-<meta property="og:title" content="AgentPay Highway — Cyberpunk Highway Racer">
-<meta property="og:description" content="10-mile cyberpunk highway through the governed agent economy. Collect tokens. Dodge traffic. Built by agents, playable by agents.">
+<title>AgentPay Highway — Drive the Governed Agent Economy</title>
+<meta name="description" content="A 10-mile cyberpunk highway through the AI agent economy. Collect 25 MCP tokens, dodge rogue agents, boost to victory. Built by agents, playable by agents.">
+<meta property="og:title" content="AgentPay Highway — Drive the Agent Economy">
+<meta property="og:description" content="10-mile cyberpunk sprint. Collect agent tokens. Dodge traffic. Govern your spending. Built by AgentPay Labs.">
 <meta property="og:image" content="https://rumblingb.github.io/agentpay-highway/og.png">
 <meta property="og:type" content="website">
 <meta name="twitter:card" content="summary_large_image">
 <style>
-:root{--void:#06060f;--asphalt:#111122;--cyan:#00f0ff;--pink:#ff2d95;--amber:#ffb800;--green:#00ff88;--text:#c8c8e0;--dim:#6a6a8a}
-*{margin:0;padding:0;box-sizing:border-box}
-body{background:var(--void);overflow:hidden;font-family:'Courier New',monospace;cursor:none;user-select:none;-webkit-user-select:none}
-canvas{display:block;position:fixed;top:0;left:0;z-index:0;width:100vw;height:100vh}
-#hud{position:fixed;z-index:10;pointer-events:none;width:100%;height:100%}
-#speedometer{position:absolute;bottom:30px;right:30px;color:var(--cyan);font-size:12px;text-shadow:0 0 10px var(--cyan);text-align:right}
-#speedometer .val{font-size:42px;font-weight:bold}
-#mini-map{position:absolute;bottom:30px;left:30px;width:120px;height:20px;border:1px solid var(--dim);background:rgba(6,6,15,.8)}
-#mini-map-fill{height:100%;background:var(--cyan);box-shadow:0 0 8px var(--cyan);width:0%;transition:width .3s}
-#mini-map-label{position:absolute;bottom:55px;left:30px;color:var(--dim);font-size:10px}
-#mile-marker{position:absolute;top:15px;left:50%;transform:translateX(-50%);color:var(--amber);font-size:12px;text-shadow:0 0 8px var(--amber);text-align:center}
-#mile-marker .mile{font-size:42px;font-weight:bold;line-height:1}
-#score-display{position:absolute;top:15px;left:20px;color:var(--green);font-size:10px;text-shadow:0 0 8px var(--green)}
-#score-display .sv{font-size:28px;font-weight:bold;line-height:1.1}
-#lives-display{position:absolute;top:15px;right:20px;display:flex;gap:6px}
-.life-dot{width:14px;height:14px;border-radius:50%;background:var(--pink);box-shadow:0 0 8px var(--pink);transition:all .3s}
-.life-dot.lost{opacity:.15;box-shadow:none;filter:grayscale(1)}
-#boost-wrap{position:absolute;bottom:70px;right:30px;width:120px;text-align:right}
-#boost-lbl{color:var(--dim);font-size:10px;margin-bottom:3px}
-#boost-outer{width:120px;height:8px;border:1px solid var(--dim);background:rgba(6,6,15,.8)}
-#boost-inner{height:100%;background:var(--amber);box-shadow:0 0 6px var(--amber);width:100%;transition:background .3s}
-#boost-rdy{color:var(--amber);font-size:10px;text-shadow:0 0 6px var(--amber);margin-top:2px}
-#token-ctr{position:absolute;bottom:70px;left:30px;color:var(--amber);font-size:10px;text-shadow:0 0 6px var(--amber)}
-#token-ctr .tv{font-size:22px;font-weight:bold}
-#combo-disp{position:absolute;top:115px;left:50%;transform:translateX(-50%);color:var(--pink);font-size:30px;font-weight:bold;text-shadow:0 0 20px var(--pink);opacity:0;transition:opacity .3s;text-align:center;letter-spacing:3px;pointer-events:none}
-#flash-msg{position:absolute;top:42%;left:50%;transform:translate(-50%,-50%);font-size:24px;font-weight:bold;text-align:center;opacity:0;pointer-events:none;white-space:nowrap}
-#zone-name{position:absolute;top:70px;left:50%;transform:translateX(-50%);color:var(--pink);font-size:16px;text-shadow:0 0 12px var(--pink);opacity:0;transition:opacity .3s;text-align:center;max-width:90vw}
-#zone-msg{position:absolute;top:95px;left:50%;transform:translateX(-50%);color:var(--text);font-size:12px;opacity:0;transition:opacity .3s;text-align:center;max-width:80vw}
-#speed-lines{position:fixed;inset:0;z-index:5;pointer-events:none;opacity:0;transition:opacity .25s;background:radial-gradient(ellipse at center,transparent 25%,rgba(0,240,255,.04) 65%,rgba(0,240,255,.1) 100%)}
-#speed-lines.on{opacity:1}
-.billboard-cta{position:absolute;pointer-events:all;color:var(--cyan);border:1px solid var(--cyan);padding:8px 20px;font-size:13px;text-shadow:0 0 8px var(--cyan);box-shadow:0 0 15px rgba(0,240,255,.3);background:rgba(0,240,255,.05);cursor:pointer;display:none;text-decoration:none;transition:all .2s}
-.billboard-cta:hover{background:rgba(0,240,255,.2);box-shadow:0 0 30px rgba(0,240,255,.6);transform:scale(1.05)}
-.billboard-cta.pink{color:var(--pink);border-color:var(--pink);text-shadow:0 0 8px var(--pink);box-shadow:0 0 15px rgba(255,45,149,.3);background:rgba(255,45,149,.05)}
-.billboard-cta.pink:hover{background:rgba(255,45,149,.2);box-shadow:0 0 30px rgba(255,45,149,.6)}
-.billboard-cta.amber{color:var(--amber);border-color:var(--amber);text-shadow:0 0 8px var(--amber);box-shadow:0 0 15px rgba(255,184,0,.3);background:rgba(255,184,0,.05)}
-#start-screen{position:fixed;z-index:100;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;background:var(--void);cursor:pointer}
-#start-screen h1{font-size:clamp(20px,5vw,44px);color:var(--cyan);text-shadow:0 0 20px var(--cyan),0 0 40px var(--cyan);text-align:center;margin-bottom:8px}
-#start-screen .sub{color:var(--dim);font-size:13px;margin-bottom:6px;text-align:center;padding:0 20px;line-height:1.7}
-.start-pulse{color:var(--pink);font-size:18px;text-shadow:0 0 10px var(--pink);animation:pulse 1.5s infinite;margin-top:16px}
-#start-hs{color:var(--amber);font-size:12px;text-shadow:0 0 8px var(--amber);margin-top:10px}
-.kbd{color:var(--dim);font-size:10px;margin-top:18px;text-align:center;line-height:2}
-#game-over{position:fixed;z-index:100;inset:0;display:none;flex-direction:column;align-items:center;justify-content:center;background:rgba(6,6,15,.93);cursor:default}
-#game-over.show{display:flex}
-#game-over h1{color:var(--pink);font-size:clamp(24px,5vw,40px);text-shadow:0 0 20px var(--pink),0 0 40px var(--pink);margin-bottom:10px;text-align:center}
-.go-stats{color:var(--text);font-size:14px;line-height:2.2;text-align:center}
-.new-rec{color:var(--amber);font-size:18px;text-shadow:0 0 12px var(--amber);margin:6px 0}
-.action-btn{padding:12px 40px;background:transparent;border:2px solid var(--cyan);color:var(--cyan);font-family:'Courier New',monospace;font-size:16px;cursor:pointer;transition:all .2s;box-shadow:0 0 15px rgba(0,240,255,.3);margin-top:18px}
-.action-btn:hover{background:rgba(0,240,255,.1);box-shadow:0 0 30px rgba(0,240,255,.6);transform:scale(1.05)}
-#victory{position:fixed;z-index:100;inset:0;display:none;flex-direction:column;align-items:center;justify-content:center;background:rgba(6,6,15,.95);cursor:default}
-#victory.show{display:flex}
-#victory h1{color:var(--green);font-size:clamp(22px,6vw,50px);text-shadow:0 0 30px var(--green),0 0 60px var(--green);margin-bottom:12px;text-align:center;animation:vpulse 1s infinite}
-.vs-stats{color:var(--cyan);font-size:14px;line-height:2.4;text-align:center}
-#audio-toggle{position:fixed;bottom:30px;left:160px;z-index:11;pointer-events:all;color:var(--dim);font-size:11px;background:none;border:1px solid var(--dim);padding:5px 12px;cursor:pointer;transition:all .2s}
-#audio-toggle:hover{color:var(--cyan);border-color:var(--cyan)}
-#glitch-overlay{position:fixed;inset:0;z-index:50;pointer-events:none;opacity:0;transition:opacity .15s}
-@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
-@keyframes vpulse{0%,100%{text-shadow:0 0 30px var(--green),0 0 60px var(--green)}50%{text-shadow:0 0 60px var(--green),0 0 120px var(--green),0 0 200px var(--green)}}
-@keyframes flashAnim{0%{opacity:0;transform:translate(-50%,-50%) scale(.6)}25%{opacity:1;transform:translate(-50%,-50%) scale(1.15)}65%{opacity:1;transform:translate(-50%,-50%) scale(1)}100%{opacity:0;transform:translate(-50%,-50%) scale(1)}}
-@media(max-width:768px){
-  #speedometer{bottom:20px;right:20px}#speedometer .val{font-size:28px}
-  #mile-marker .mile{font-size:30px}#mile-marker{top:10px}
-  #mini-map,#mini-map-label{display:none}
-  #zone-name{font-size:13px;top:60px}#zone-msg{font-size:10px;top:82px}
-  #lives-display{top:10px;right:12px}.life-dot{width:11px;height:11px}
-  #boost-wrap{bottom:58px;right:18px;width:90px}#boost-outer{width:90px}
-  #score-display .sv{font-size:20px}#combo-disp{font-size:22px}
+:root{
+  --void:#06060f;--asphalt:#0d0d1a;--cyan:#00f0ff;--pink:#ff2d95;
+  --amber:#ffb800;--green:#00ff88;--text:#c8c8e0;--dim:#4a4a6a;
+  --panel:rgba(6,6,15,.85);--panel-border:rgba(0,240,255,.15);
+  --font:'Courier New',Courier,monospace
 }
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{background:var(--void);overflow-x:hidden;font-family:var(--font);cursor:none;user-select:none;-webkit-user-select:none}
+canvas{display:block;position:fixed;top:0;left:0;z-index:0;width:100vw;height:100vh}
+
+/* ── CUSTOM CURSOR ─────────────────────────────── */
+#cursor{position:fixed;pointer-events:none;z-index:9999;width:12px;height:12px;border:1.5px solid var(--cyan);border-radius:50%;transform:translate(-50%,-50%);transition:transform .08s,border-color .15s;mix-blend-mode:difference}
+#cursor::after{content:'';position:absolute;inset:3px;background:var(--cyan);border-radius:50%;opacity:.6}
+body:hover #cursor{opacity:1}
+
+/* ── START SCREEN ───────────────────────────────── */
+#start-screen{
+  position:fixed;z-index:100;inset:0;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  background:radial-gradient(ellipse 120% 80% at 50% 0%,rgba(0,240,255,.04) 0%,var(--void) 60%);
+  cursor:pointer
+}
+.start-grid{
+  position:absolute;inset:0;
+  background-image:
+    linear-gradient(rgba(0,240,255,.04) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(0,240,255,.04) 1px,transparent 1px);
+  background-size:60px 60px;
+  mask-image:radial-gradient(ellipse 80% 70% at 50% 50%,black 30%,transparent 80%)
+}
+.start-badge{
+  display:inline-flex;align-items:center;gap:.5rem;
+  background:rgba(0,240,255,.06);border:1px solid rgba(0,240,255,.2);
+  color:var(--cyan);padding:.3rem 1rem;border-radius:99px;
+  font-size:.65rem;letter-spacing:.12em;text-transform:uppercase;font-weight:700;
+  margin-bottom:1.5rem;animation:fadeUp .6s ease .2s both
+}
+.start-badge::before{content:'';width:6px;height:6px;border-radius:50%;background:var(--cyan);box-shadow:0 0 8px var(--cyan);animation:blink 1.2s infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
+@keyframes fadeUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
+
+.start-title{
+  font-size:clamp(2.8rem,8vw,5.5rem);font-weight:900;
+  text-align:center;line-height:1;letter-spacing:-.02em;
+  margin-bottom:.5rem;animation:fadeUp .6s ease .35s both
+}
+.start-title .line1{
+  display:block;color:var(--cyan);
+  text-shadow:0 0 40px var(--cyan),0 0 80px rgba(0,240,255,.4);
+  animation:glitchTitle 8s infinite
+}
+.start-title .line2{
+  display:block;
+  background:linear-gradient(135deg,var(--pink),var(--amber));
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+  font-size:.55em
+}
+@keyframes glitchTitle{
+  0%,96%{transform:none;filter:none}
+  97%{transform:translateX(-2px);filter:hue-rotate(90deg)}
+  98%{transform:translateX(2px) skewX(2deg)}
+  99%{transform:none;filter:none}
+  100%{transform:none}
+}
+
+.start-tagline{
+  font-size:clamp(.7rem,.9vw,.85rem);color:var(--dim);
+  text-align:center;max-width:500px;line-height:1.8;letter-spacing:.06em;
+  margin-bottom:2.5rem;animation:fadeUp .6s ease .5s both
+}
+.start-tagline strong{color:var(--text)}
+
+/* Floating token preview */
+.token-preview{
+  display:flex;gap:1rem;margin-bottom:2.5rem;
+  animation:fadeUp .6s ease .6s both
+}
+.tp-token{
+  display:flex;flex-direction:column;align-items:center;gap:.35rem;
+  width:54px
+}
+.tp-gem{
+  width:28px;height:28px;border-radius:4px;transform:rotate(45deg);
+  animation:float var(--d,3s) ease-in-out infinite;animation-delay:var(--delay,0s)
+}
+.tp-label{font-size:.45rem;color:var(--dim);text-align:center;letter-spacing:.05em;text-transform:uppercase;line-height:1.3}
+@keyframes float{0%,100%{transform:rotate(45deg) translateY(0)}50%{transform:rotate(45deg) translateY(-5px)}}
+
+/* Stats strip */
+.start-stats{
+  display:flex;gap:2.5rem;margin-bottom:2.5rem;
+  animation:fadeUp .6s ease .65s both
+}
+.ss-item{text-align:center}
+.ss-num{font-size:1.6rem;font-weight:900;color:var(--cyan);text-shadow:0 0 15px var(--cyan);line-height:1}
+.ss-label{font-size:.6rem;color:var(--dim);letter-spacing:.1em;text-transform:uppercase;margin-top:.2rem}
+
+/* CTA button */
+.start-cta{
+  display:flex;flex-direction:column;align-items:center;gap:.75rem;
+  animation:fadeUp .6s ease .75s both
+}
+.pulse-ring{
+  position:relative;width:80px;height:80px;
+  display:flex;align-items:center;justify-content:center;margin-bottom:.25rem
+}
+.pulse-ring::before,.pulse-ring::after{
+  content:'';position:absolute;inset:0;border-radius:50%;
+  border:1.5px solid var(--cyan);animation:ripple 2s ease-out infinite
+}
+.pulse-ring::after{animation-delay:.7s}
+@keyframes ripple{0%{transform:scale(.7);opacity:.8}100%{transform:scale(1.4);opacity:0}}
+.pulse-inner{
+  width:54px;height:54px;border-radius:50%;
+  background:rgba(0,240,255,.1);border:1.5px solid var(--cyan);
+  display:flex;align-items:center;justify-content:center;
+  font-size:1.3rem;box-shadow:0 0 20px rgba(0,240,255,.3);
+  transition:all .2s;z-index:1
+}
+.pulse-inner:hover{background:rgba(0,240,255,.2);transform:scale(1.05)}
+.start-cta-text{font-size:.72rem;color:var(--cyan);letter-spacing:.15em;text-transform:uppercase;text-shadow:0 0 10px var(--cyan)}
+.start-hs{font-size:.6rem;color:var(--dim)}
+.start-controls{font-size:.6rem;color:var(--dim);text-align:center;line-height:2;letter-spacing:.04em;margin-top:.5rem}
+
+/* ── GAME HUD ─────────────────────────────────── */
+#hud{position:fixed;z-index:10;pointer-events:none;width:100%;height:100%}
+
+/* Score panel — top left */
+#score-panel{
+  position:absolute;top:16px;left:16px;
+  background:var(--panel);border:1px solid var(--panel-border);
+  backdrop-filter:blur(8px);border-radius:10px;
+  padding:.65rem 1rem;min-width:120px
+}
+#score-panel .sp-label{font-size:.55rem;color:var(--dim);letter-spacing:.1em;text-transform:uppercase}
+#score-val{font-size:1.6rem;font-weight:900;color:var(--green);text-shadow:0 0 12px var(--green);line-height:1.15;display:block}
+#combo-panel{margin-top:.3rem;display:none}
+#combo-val{font-size:.65rem;color:var(--pink);font-weight:700;letter-spacing:.05em}
+
+/* Lives panel — top right */
+#lives-panel{
+  position:absolute;top:16px;right:16px;
+  background:var(--panel);border:1px solid var(--panel-border);
+  backdrop-filter:blur(8px);border-radius:10px;
+  padding:.65rem 1rem;display:flex;flex-direction:column;align-items:flex-end;gap:.35rem
+}
+#lives-panel .sp-label{font-size:.55rem;color:var(--dim);letter-spacing:.1em;text-transform:uppercase}
+.lives-dots{display:flex;gap:.4rem}
+.life-dot{
+  width:13px;height:13px;border-radius:50%;
+  background:var(--pink);box-shadow:0 0 8px var(--pink);
+  transition:all .3s
+}
+.life-dot.lost{opacity:.15;box-shadow:none;filter:grayscale(1)}
+
+/* Mile marker — top center */
+#mile-panel{
+  position:absolute;top:16px;left:50%;transform:translateX(-50%);
+  background:var(--panel);border:1px solid var(--panel-border);
+  backdrop-filter:blur(8px);border-radius:10px;
+  padding:.65rem 1.25rem;text-align:center;min-width:130px
+}
+#mile-panel .sp-label{font-size:.55rem;color:var(--dim);letter-spacing:.1em;text-transform:uppercase}
+#mile-val{font-size:1.5rem;font-weight:900;color:var(--amber);text-shadow:0 0 12px var(--amber);line-height:1.15}
+
+/* Speed — bottom right */
+#speed-panel{
+  position:absolute;bottom:24px;right:16px;
+  background:var(--panel);border:1px solid var(--panel-border);
+  backdrop-filter:blur(8px);border-radius:10px;
+  padding:.65rem 1rem;text-align:right;pointer-events:all
+}
+#speed-val{font-size:2.2rem;font-weight:900;color:var(--cyan);text-shadow:0 0 12px var(--cyan);line-height:1}
+#speed-unit{font-size:.55rem;color:var(--dim);letter-spacing:.1em}
+
+/* Progress bar — bottom full width */
+#progress-bar{
+  position:absolute;bottom:0;left:0;right:0;height:3px;
+  background:rgba(255,255,255,.06)
+}
+#progress-fill{height:100%;background:linear-gradient(90deg,var(--cyan),var(--pink));width:0%;transition:width .3s;box-shadow:0 0 8px var(--cyan)}
+
+/* Token counter — bottom left */
+#token-panel{
+  position:absolute;bottom:24px;left:16px;
+  background:var(--panel);border:1px solid var(--panel-border);
+  backdrop-filter:blur(8px);border-radius:10px;
+  padding:.65rem 1rem
+}
+#token-panel .sp-label{font-size:.55rem;color:var(--dim);letter-spacing:.1em;text-transform:uppercase}
+.token-count{display:flex;align-items:baseline;gap:.3rem}
+#tok-val{font-size:1.5rem;font-weight:900;color:var(--amber);text-shadow:0 0 10px var(--amber);line-height:1.15}
+.tok-total{font-size:.75rem;color:var(--dim)}
+
+/* Boost meter — above speed panel */
+#boost-panel{
+  position:absolute;bottom:110px;right:16px;
+  background:var(--panel);border:1px solid var(--panel-border);
+  backdrop-filter:blur(8px);border-radius:10px;
+  padding:.65rem 1rem;min-width:120px;pointer-events:all
+}
+#boost-label{font-size:.55rem;color:var(--dim);letter-spacing:.1em;text-transform:uppercase;margin-bottom:.4rem}
+#boost-track{height:5px;background:rgba(255,255,255,.08);border-radius:99px;overflow:hidden}
+#boost-fill{height:100%;background:linear-gradient(90deg,var(--amber),#ff6b00);border-radius:99px;width:100%;transition:background .3s}
+#boost-status{font-size:.6rem;color:var(--amber);margin-top:.3rem;letter-spacing:.05em}
+
+/* Mini map — bottom center */
+#mini-map-wrap{
+  position:absolute;bottom:24px;left:50%;transform:translateX(-50%);
+  background:var(--panel);border:1px solid var(--panel-border);
+  backdrop-filter:blur(8px);border-radius:10px;
+  padding:.5rem .85rem;min-width:160px;text-align:center
+}
+#mini-map-label{font-size:.5rem;color:var(--dim);letter-spacing:.1em;text-transform:uppercase;margin-bottom:.3rem}
+#mini-map{height:4px;background:rgba(255,255,255,.08);border-radius:99px;overflow:hidden;position:relative}
+#mini-map-fill{height:100%;background:linear-gradient(90deg,var(--cyan),var(--pink));width:0%;border-radius:99px}
+#mini-map-dot{position:absolute;top:50%;transform:translate(-50%,-50%);width:8px;height:8px;border-radius:50%;background:var(--cyan);box-shadow:0 0 6px var(--cyan)}
+
+/* Zone overlay */
+#zone-overlay{
+  position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
+  text-align:center;pointer-events:none;
+  opacity:0;transition:opacity .4s;white-space:nowrap
+}
+#zone-name{font-size:clamp(1.2rem,3vw,2rem);font-weight:900;letter-spacing:.1em;text-transform:uppercase;text-shadow:0 0 30px currentColor}
+#zone-msg{font-size:clamp(.65rem,.8vw,.8rem);color:var(--text);margin-top:.4rem;letter-spacing:.05em;opacity:.8}
+
+/* Flash message */
+#flash-msg{
+  position:absolute;top:38%;left:50%;transform:translate(-50%,-50%);
+  font-size:1.6rem;font-weight:900;text-align:center;opacity:0;
+  pointer-events:none;white-space:nowrap;letter-spacing:.1em
+}
+#combo-disp{
+  position:absolute;top:52%;left:50%;transform:translateX(-50%);
+  font-size:1.4rem;font-weight:900;color:var(--pink);letter-spacing:.15em;
+  text-shadow:0 0 20px var(--pink);opacity:0;transition:opacity .3s;pointer-events:none
+}
+
+/* Speed lines */
+#speed-lines{
+  position:fixed;inset:0;z-index:5;pointer-events:none;opacity:0;transition:opacity .25s;
+  background:radial-gradient(ellipse at center,transparent 20%,rgba(0,240,255,.03) 65%,rgba(0,240,255,.08) 100%)
+}
+#speed-lines.on{opacity:1}
+
+/* Glitch overlay */
+#glitch-overlay{position:fixed;inset:0;z-index:50;pointer-events:none;opacity:0;transition:opacity .1s;background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(255,45,149,.04) 2px,rgba(255,45,149,.04) 4px)}
+
+/* Billboard CTAs */
+.billboard-cta{
+  position:absolute;pointer-events:all;
+  padding:9px 22px;font-size:.75rem;font-weight:700;letter-spacing:.07em;text-transform:uppercase;
+  border-radius:4px;display:none;text-decoration:none;transition:all .2s;cursor:pointer;
+  backdrop-filter:blur(4px)
+}
+.billboard-cta.cyan{color:var(--cyan);border:1px solid var(--cyan);background:rgba(0,240,255,.06);text-shadow:0 0 8px var(--cyan);box-shadow:0 0 20px rgba(0,240,255,.2)}
+.billboard-cta.cyan:hover{background:rgba(0,240,255,.18);box-shadow:0 0 35px rgba(0,240,255,.5);transform:scale(1.04)}
+.billboard-cta.pink{color:var(--pink);border:1px solid var(--pink);background:rgba(255,45,149,.06);text-shadow:0 0 8px var(--pink);box-shadow:0 0 20px rgba(255,45,149,.2)}
+.billboard-cta.pink:hover{background:rgba(255,45,149,.18);box-shadow:0 0 35px rgba(255,45,149,.5);transform:scale(1.04)}
+.billboard-cta.amber{color:var(--amber);border:1px solid var(--amber);background:rgba(255,184,0,.06);text-shadow:0 0 8px var(--amber);box-shadow:0 0 20px rgba(255,184,0,.2)}
+.billboard-cta.amber:hover{background:rgba(255,184,0,.18);box-shadow:0 0 35px rgba(255,184,0,.5);transform:scale(1.04)}
+
+/* Mobile D-pad */
+#dpad{
+  position:absolute;bottom:30px;left:50%;transform:translateX(-50%);
+  display:none;gap:.5rem;pointer-events:all
+}
+.dp-btn{
+  width:52px;height:52px;border-radius:8px;background:rgba(0,240,255,.08);
+  border:1px solid rgba(0,240,255,.2);display:flex;align-items:center;justify-content:center;
+  color:var(--cyan);font-size:1.1rem;touch-action:none;cursor:pointer;transition:background .1s
+}
+.dp-btn:active{background:rgba(0,240,255,.25)}
+
+/* Audio toggle */
+#audio-toggle{
+  position:fixed;bottom:24px;right:148px;z-index:11;pointer-events:all;
+  color:var(--dim);font-size:.65rem;background:var(--panel);
+  border:1px solid var(--panel-border);padding:.4rem .8rem;
+  cursor:pointer;transition:all .2s;border-radius:6px;letter-spacing:.06em;font-family:var(--font)
+}
+#audio-toggle:hover{color:var(--cyan);border-color:rgba(0,240,255,.3)}
+
+/* ── GAME OVER SCREEN ─────────────────────────── */
+#game-over{
+  position:fixed;z-index:100;inset:0;display:none;
+  flex-direction:column;align-items:center;justify-content:center;
+  background:rgba(6,6,15,.96);backdrop-filter:blur(12px);cursor:default
+}
+#game-over.show{display:flex}
+.go-content{
+  background:rgba(255,45,149,.04);border:1px solid rgba(255,45,149,.2);
+  border-radius:16px;padding:2.5rem 3rem;text-align:center;max-width:440px;width:90%
+}
+.go-icon{font-size:2.5rem;margin-bottom:.75rem}
+.go-title{font-size:2rem;font-weight:900;color:var(--pink);text-shadow:0 0 25px var(--pink);letter-spacing:.05em;margin-bottom:.25rem}
+.go-sub{font-size:.75rem;color:var(--dim);letter-spacing:.08em;margin-bottom:1.5rem}
+.go-stats-grid{display:grid;grid-template-columns:1fr 1fr;gap:.75rem;margin-bottom:1.5rem}
+.go-stat{background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.07);border-radius:8px;padding:.75rem}
+.go-stat .v{font-size:1.3rem;font-weight:900;color:var(--cyan);line-height:1}
+.go-stat .l{font-size:.55rem;color:var(--dim);letter-spacing:.08em;text-transform:uppercase;margin-top:.2rem}
+#go-rec{color:var(--amber);font-size:.8rem;font-weight:700;letter-spacing:.1em;margin-bottom:1rem;display:none}
+.go-actions{display:flex;gap:.65rem;justify-content:center;flex-wrap:wrap}
+.action-btn{
+  padding:.7rem 1.6rem;background:transparent;font-family:var(--font);font-size:.78rem;
+  letter-spacing:.1em;cursor:pointer;transition:all .2s;font-weight:700;border-radius:6px;
+  text-transform:uppercase
+}
+.action-btn-primary{border:1.5px solid var(--cyan);color:var(--cyan);box-shadow:0 0 15px rgba(0,240,255,.2)}
+.action-btn-primary:hover{background:rgba(0,240,255,.1);box-shadow:0 0 30px rgba(0,240,255,.4);transform:translateY(-1px)}
+.action-btn-secondary{border:1px solid rgba(255,255,255,.12);color:var(--dim)}
+.action-btn-secondary:hover{border-color:rgba(255,255,255,.25);color:var(--text)}
+
+/* ── VICTORY SCREEN ─────────────────────────── */
+#victory{
+  position:fixed;z-index:100;inset:0;display:none;
+  flex-direction:column;align-items:center;justify-content:center;
+  background:rgba(6,6,15,.96);backdrop-filter:blur(12px);overflow-y:auto;cursor:default;
+  padding:2rem 1rem
+}
+#victory.show{display:flex}
+.vic-content{max-width:520px;width:100%;text-align:center}
+.vic-icon{font-size:3rem;margin-bottom:.5rem;animation:vpulse 1.5s ease-in-out infinite}
+@keyframes vpulse{0%,100%{filter:drop-shadow(0 0 20px var(--cyan))}50%{filter:drop-shadow(0 0 50px var(--cyan))}}
+.vic-title{font-size:clamp(1.5rem,5vw,2.5rem);font-weight:900;color:var(--cyan);text-shadow:0 0 30px var(--cyan);letter-spacing:.05em;margin-bottom:.3rem}
+.vic-sub{font-size:.78rem;color:var(--text);margin-bottom:1.5rem;line-height:1.6}
+.vic-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:.65rem;margin-bottom:1.5rem}
+.vic-stat{background:rgba(0,240,255,.04);border:1px solid rgba(0,240,255,.15);border-radius:8px;padding:.75rem}
+.vic-stat .v{font-size:1.2rem;font-weight:900;color:var(--cyan);line-height:1}
+.vic-stat .l{font-size:.5rem;color:var(--dim);letter-spacing:.08em;text-transform:uppercase;margin-top:.2rem}
+#vs-rec{color:var(--amber);font-size:.75rem;font-weight:700;letter-spacing:.1em;margin-bottom:.75rem;display:none}
+.vic-cta{background:linear-gradient(135deg,rgba(0,240,255,.1),rgba(255,45,149,.1));border:1px solid rgba(0,240,255,.25);border-radius:12px;padding:1.25rem;margin-bottom:1.25rem;text-decoration:none;display:block;transition:all .2s}
+.vic-cta:hover{border-color:rgba(0,240,255,.5);transform:translateY(-2px);box-shadow:0 8px 30px rgba(0,240,255,.15)}
+.vic-cta-label{font-size:.6rem;color:var(--dim);letter-spacing:.12em;text-transform:uppercase;margin-bottom:.3rem}
+.vic-cta-title{font-size:1rem;font-weight:900;color:var(--text)}
+.vic-cta-desc{font-size:.72rem;color:var(--dim);margin-top:.2rem}
+
+/* Animations */
+@keyframes flashAnim{0%{opacity:0;transform:translate(-50%,-50%) scale(.7)}20%{opacity:1;transform:translate(-50%,-50%) scale(1.08)}70%{opacity:1;transform:translate(-50%,-50%) scale(1)}100%{opacity:0;transform:translate(-50%,-50%) scale(1)}}
+
+/* ── LANDING PAGE (below canvas) ──────────────── */
+#game-section{position:relative;height:100vh;overflow:hidden}
+#landing{
+  background:var(--void);position:relative;
+}
+
+.landing-hero{
+  text-align:center;padding:6rem 2rem 4rem;position:relative;overflow:hidden
+}
+.landing-hero::before{
+  content:'';position:absolute;inset:0;
+  background:radial-gradient(ellipse 80% 60% at 50% 0%,rgba(0,240,255,.07) 0%,transparent 70%);
+  pointer-events:none
+}
+.lh-badge{
+  display:inline-flex;align-items:center;gap:.5rem;
+  background:rgba(0,240,255,.06);border:1px solid rgba(0,240,255,.18);
+  color:var(--cyan);padding:.3rem 1rem;border-radius:99px;
+  font-size:.65rem;letter-spacing:.1em;text-transform:uppercase;font-weight:700;margin-bottom:1.25rem
+}
+.lh-title{
+  font-size:clamp(2rem,5vw,3.5rem);font-weight:900;letter-spacing:-.025em;
+  line-height:1.05;margin-bottom:.85rem;color:var(--text)
+}
+.lh-title span{
+  background:linear-gradient(135deg,var(--cyan),var(--pink));
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent
+}
+.lh-sub{font-size:.95rem;color:var(--dim);max-width:560px;margin:0 auto 2.5rem;line-height:1.7;letter-spacing:.02em}
+
+.lh-stats{
+  display:flex;gap:0;justify-content:center;flex-wrap:wrap;
+  max-width:700px;margin:0 auto 3.5rem
+}
+.lh-stat{
+  flex:1;min-width:140px;text-align:center;padding:1.25rem 1rem;
+  background:var(--asphalt);border:1px solid rgba(255,255,255,.06)
+}
+.lh-stat:first-child{border-radius:10px 0 0 10px}
+.lh-stat:last-child{border-radius:0 10px 10px 0}
+.lh-num{font-size:2rem;font-weight:900;color:var(--cyan);text-shadow:0 0 15px var(--cyan)}
+.lh-lbl{font-size:.6rem;color:var(--dim);letter-spacing:.08em;text-transform:uppercase;margin-top:.3rem}
+
+/* Products grid */
+.products-section{padding:4rem 2rem;max-width:1100px;margin:0 auto}
+.section-header{text-align:center;margin-bottom:2.5rem}
+.section-tag{font-size:.65rem;color:var(--cyan);letter-spacing:.12em;text-transform:uppercase;font-weight:700;margin-bottom:.5rem}
+.section-title{font-size:clamp(1.5rem,3vw,2.2rem);font-weight:900;color:var(--text);letter-spacing:-.02em}
+
+.products-grid{
+  display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:.85rem
+}
+.product-card{
+  background:var(--asphalt);border:1px solid rgba(255,255,255,.06);
+  border-radius:10px;padding:1.25rem;transition:all .22s;
+  text-decoration:none;color:inherit;display:flex;flex-direction:column
+}
+.product-card:hover{border-color:rgba(0,240,255,.25);background:rgba(0,240,255,.03);transform:translateY(-2px);box-shadow:0 8px 24px rgba(0,0,0,.4)}
+.pc-icon{font-size:1.4rem;margin-bottom:.65rem}
+.pc-name{font-size:.88rem;font-weight:700;color:var(--text);margin-bottom:.25rem}
+.pc-desc{font-size:.75rem;color:var(--dim);line-height:1.55;flex:1;margin-bottom:.75rem}
+.pc-price{font-size:.7rem;color:var(--cyan);font-weight:700;letter-spacing:.05em}
+
+/* How it works */
+.how-section{
+  padding:4rem 2rem;background:linear-gradient(180deg,transparent,rgba(0,240,255,.02) 50%,transparent);
+  max-width:900px;margin:0 auto
+}
+.how-steps{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:1.5rem;margin-top:2rem}
+.how-step{text-align:center;padding:1.5rem}
+.hs-num{font-size:2rem;font-weight:900;color:var(--cyan);opacity:.3;line-height:1;margin-bottom:.5rem}
+.hs-title{font-size:.88rem;font-weight:700;color:var(--text);margin-bottom:.4rem}
+.hs-desc{font-size:.75rem;color:var(--dim);line-height:1.55}
+
+/* CTA block */
+.cta-block{text-align:center;padding:4rem 2rem;border-top:1px solid rgba(255,255,255,.05)}
+.cta-title{font-size:clamp(1.4rem,3vw,2rem);font-weight:900;color:var(--text);margin-bottom:.65rem;letter-spacing:-.02em}
+.cta-sub{font-size:.85rem;color:var(--dim);max-width:440px;margin:0 auto 2rem;line-height:1.6}
+.cta-btns{display:flex;gap:.85rem;justify-content:center;flex-wrap:wrap}
+.cta-btn{
+  padding:.85rem 1.8rem;border-radius:8px;font-family:var(--font);
+  font-size:.82rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;
+  text-decoration:none;transition:all .2s;cursor:pointer;border:none
+}
+.cta-btn-primary{
+  background:linear-gradient(135deg,var(--cyan),#0099cc);color:var(--void);
+  box-shadow:0 4px 20px rgba(0,240,255,.3)
+}
+.cta-btn-primary:hover{box-shadow:0 8px 35px rgba(0,240,255,.5);transform:translateY(-2px)}
+.cta-btn-secondary{
+  background:transparent;color:var(--text);
+  border:1px solid rgba(255,255,255,.12)
+}
+.cta-btn-secondary:hover{border-color:rgba(255,255,255,.28);color:#fff}
+
+/* Footer */
+footer{
+  padding:2rem;text-align:center;border-top:1px solid rgba(255,255,255,.05);
+  font-size:.7rem;color:var(--dim);letter-spacing:.04em
+}
+footer a{color:var(--cyan);text-decoration:none}
+footer a:hover{text-shadow:0 0 8px var(--cyan)}
+
+/* Scroll hint */
+#scroll-hint{
+  position:fixed;bottom:2rem;left:50%;transform:translateX(-50%);
+  color:var(--dim);font-size:.6rem;letter-spacing:.1em;text-transform:uppercase;
+  display:none;align-items:center;gap:.5rem;z-index:20;pointer-events:none;
+  animation:fadeUp .5s ease;
+}
+#scroll-hint::after{content:'▼';animation:bounceDown 1.5s ease infinite}
+@keyframes bounceDown{0%,100%{transform:translateY(0)}50%{transform:translateY(3px)}}
+
+/* ── RESPONSIVE ─────────────────────────────── */
+@media(max-width:768px){
+  #speed-panel,#boost-panel{display:none}
+  #dpad{display:flex}
+  #mini-map-wrap{display:none}
+  #audio-toggle{right:16px;bottom:8px}
+  .start-stats{gap:1.25rem}
+  .go-stats-grid{grid-template-columns:1fr 1fr}
+  .vic-stats{grid-template-columns:1fr 1fr 1fr}
+  .lh-stats{gap:1px}
+}
+@media(max-width:480px){
+  #score-panel,#lives-panel,#mile-panel,#token-panel{padding:.45rem .65rem}
+  #score-val,#mile-val,#tok-val{font-size:1.2rem}
+  .go-stats-grid{grid-template-columns:1fr 1fr}
+  .token-preview{gap:.5rem}
+}
+@media print{#game-section,#scroll-hint{display:none}}
 </style>
 </head>
 <body>
 
+<div id="cursor"></div>
+
+<!-- ═══════════ GAME SECTION ═══════════ -->
+<div id="game-section">
+
+<!-- START SCREEN -->
 <div id="start-screen">
-  <h1>⬡ AGENTPAY HIGHWAY</h1>
-  <div class="sub">
-    10-mile cyberpunk sprint through the governed agent economy<br>
-    Collect ◆ tokens · Dodge traffic · Boost to victory
+  <div class="start-grid"></div>
+  <div class="start-badge"><span></span>SEASON 1 — 2026 · LIVE</div>
+  <h1 class="start-title">
+    <span class="line1">AGENTPAY</span>
+    <span class="line2">HIGHWAY</span>
+  </h1>
+  <p class="start-tagline">
+    <strong>10 miles. 25 agent tokens. 3 lives.</strong><br>
+    Drive the governed AI agent economy.<br>
+    Collect MCP tools. Dodge rogue agents. Boost to victory.
+  </p>
+  <div class="token-preview" id="tokenPreview"></div>
+  <div class="start-stats">
+    <div class="ss-item"><div class="ss-num">10</div><div class="ss-label">Miles</div></div>
+    <div class="ss-item"><div class="ss-num">25</div><div class="ss-label">Tokens</div></div>
+    <div class="ss-item"><div class="ss-num">∞</div><div class="ss-label">Retries</div></div>
   </div>
-  <div class="start-pulse">[ TAP OR PRESS ENTER ]</div>
-  <div id="start-hs"></div>
-  <div id="loading-msg" style="color:#6a6a8a;font-size:11px;margin-top:10px;display:none">⬡ Initializing 3D engine...</div>
-  <div class="kbd">
-    ← → or A/D — dodge &nbsp;|&nbsp; SPACE — boost burst (2s)<br>
-    Collect ◆ agent tokens for points &amp; combos<br>
-    3 lives · 10 miles · reach the finish
+  <div class="start-cta">
+    <div class="pulse-ring">
+      <div class="pulse-inner">▶</div>
+    </div>
+    <div class="start-cta-text">[ ENTER / TAP TO DRIVE ]</div>
+    <div class="start-hs" id="start-hs"></div>
+  </div>
+  <div class="start-controls">
+    ← → / A D &nbsp;—&nbsp; dodge lanes &nbsp;|&nbsp; SPACE &nbsp;—&nbsp; boost (2s)
   </div>
 </div>
 
+<!-- HUD -->
 <div id="hud">
-  <div id="mini-map-label">HIGHWAY MAP</div>
-  <div id="mini-map"><div id="mini-map-fill"></div></div>
-  <div id="score-display">SCORE<br><span class="sv" id="score-val">0</span></div>
-  <div id="mile-marker"><span class="mile" id="mile-val">0.0</span><br>MILE</div>
-  <div id="lives-display">
-    <div class="life-dot" id="life-1"></div>
-    <div class="life-dot" id="life-2"></div>
-    <div class="life-dot" id="life-3"></div>
+  <div id="score-panel">
+    <div class="sp-label">Score</div>
+    <span id="score-val">0</span>
+    <div id="combo-panel"><span id="combo-val">×1 COMBO</span></div>
   </div>
-  <div id="speedometer"><div class="val" id="speed-val">0</div><div style="font-size:11px;opacity:.7">MPH</div></div>
-  <div id="boost-wrap">
-    <div id="boost-lbl">BOOST</div>
-    <div id="boost-outer"><div id="boost-inner"></div></div>
-    <div id="boost-rdy">[ SPACE ] READY</div>
+
+  <div id="mile-panel">
+    <div class="sp-label">Mile</div>
+    <div id="mile-val">0.0</div>
   </div>
-  <div id="token-ctr">TOKENS<br><span class="tv" id="tok-val">0</span><span style="color:var(--dim);font-size:13px">/25</span></div>
-  <div id="zone-name"></div>
-  <div id="zone-msg"></div>
-  <div id="combo-disp"></div>
+
+  <div id="lives-panel">
+    <div class="sp-label">Lives</div>
+    <div class="lives-dots">
+      <div class="life-dot" id="life-1"></div>
+      <div class="life-dot" id="life-2"></div>
+      <div class="life-dot" id="life-3"></div>
+    </div>
+  </div>
+
+  <div id="speed-panel">
+    <div id="speed-val">0</div>
+    <div id="speed-unit">MPH</div>
+  </div>
+
+  <div id="token-panel">
+    <div class="sp-label">Tokens</div>
+    <div class="token-count">
+      <span id="tok-val">0</span>
+      <span class="tok-total">/25</span>
+    </div>
+  </div>
+
+  <div id="boost-panel">
+    <div id="boost-label">Boost</div>
+    <div id="boost-track"><div id="boost-fill"></div></div>
+    <div id="boost-status">READY ▲</div>
+  </div>
+
+  <div id="mini-map-wrap">
+    <div id="mini-map-label">Progress</div>
+    <div id="mini-map"><div id="mini-map-fill"></div><div id="mini-map-dot" style="left:0%"></div></div>
+  </div>
+
+  <!-- Mobile D-pad -->
+  <div id="dpad">
+    <button class="dp-btn" id="dp-left" ontouchstart="dpadPress('left')" ontouchend="dpadRelease()">◄</button>
+    <button class="dp-btn" id="dp-boost" ontouchstart="doBoost && doBoost()">▲</button>
+    <button class="dp-btn" id="dp-right" ontouchstart="dpadPress('right')" ontouchend="dpadRelease()">►</button>
+  </div>
+
+  <!-- Zone overlay -->
+  <div id="zone-overlay">
+    <div id="zone-name"></div>
+    <div id="zone-msg"></div>
+  </div>
+
+  <!-- Flash message -->
   <div id="flash-msg"></div>
-  <a id="cta-cost" class="billboard-cta" href="https://buy.stripe.com/dRm4gB7Tpck43ry9351oI0x" target="_blank">💾 TRY COST TRACKER ↗</a>
-  <a id="cta-memory" class="billboard-cta pink" href="https://buy.stripe.com/cNifZj0qXesc6DKcfh1oI0y" target="_blank">🧠 TRY MEMORY MCP ↗</a>
-  <a id="cta-proof" class="billboard-cta amber" href="https://buy.stripe.com/aFabJ34Hd3Nye6cbbd1oI0J" target="_blank">🔐 TRY PROOF MCP ↗</a>
-  <a id="cta-wallet" class="billboard-cta" href="https://buy.stripe.com/6oU9AV0qXabW4vCbbd1oI0I" target="_blank">👛 TRY WALLET MCP ↗</a>
-  <a id="cta-passport" class="billboard-cta pink" href="https://buy.stripe.com/28E3cxflRabW1jqgvx1oI0s" target="_blank">🛂 TRY PASSPORT ↗</a>
-  <a id="cta-escrow" class="billboard-cta amber" href="https://buy.stripe.com/00w5kF0qXfwg3rygvx1oI12" target="_blank">⚡ TRY ESCROW ↗</a>
-  <a id="cta-final" class="billboard-cta pink" href="https://buy.stripe.com/bJebJ37TpgAkd285QT1oI0q" target="_blank" style="font-size:16px;padding:12px 30px;position:absolute;left:50%;top:55%;transform:translate(-50%,-50%)">⚡ GET AGENT PASSPORT — $19/MO ⚡</a>
+  <div id="combo-disp"></div>
+
+  <!-- Billboards -->
+  <a id="cta-cost"     class="billboard-cta cyan"  href="https://buy.stripe.com/dRm4gB7Tpck43ry9351oI0x" target="_blank">◈ COST TRACKER — $19/MO →</a>
+  <a id="cta-memory"   class="billboard-cta pink"  href="https://buy.stripe.com/cNifZj0qXesc6DKcfh1oI0y" target="_blank">◈ MEMORY MCP — $19/MO →</a>
+  <a id="cta-proof"    class="billboard-cta amber" href="https://buy.stripe.com/aFabJ34Hd3Nye6cbbd1oI0J" target="_blank">◈ PROOF MCP — $19/MO →</a>
+  <a id="cta-wallet"   class="billboard-cta cyan"  href="https://buy.stripe.com/6oU9AV0qXabW4vCbbd1oI0I" target="_blank">◈ WALLET MCP — $19/MO →</a>
+  <a id="cta-passport" class="billboard-cta pink"  href="https://buy.stripe.com/28E3cxflRabW1jqgvx1oI0s" target="_blank">◈ AGENTPASSPORT — FROM $19 →</a>
+  <a id="cta-escrow"   class="billboard-cta amber" href="https://buy.stripe.com/00w5kF0qXfwg3rygvx1oI12" target="_blank">◈ ESCROW API — FREE BETA →</a>
+  <a id="cta-final"    class="billboard-cta pink"  href="https://rumblingb.github.io/agentpay-labs-hub/" target="_blank" style="font-size:.9rem;padding:14px 32px;position:absolute;left:50%;top:52%;transform:translate(-50%,-50%)">⬡ EXPLORE ALL 33 TOOLS ⬡</a>
 </div>
 
+<!-- Speed lines / glitch -->
 <div id="speed-lines"></div>
 <div id="glitch-overlay"></div>
 
-<div id="game-over">
-  <h1>☠ GAME OVER</h1>
-  <div class="go-stats">
-    Score: <span id="go-score" style="color:var(--cyan)">0</span><br>
-    Distance: <span id="go-dist" style="color:var(--cyan)">0.0</span> miles<br>
-    Tokens: <span id="go-tok" style="color:var(--amber)">0</span>/25
-  </div>
-  <div class="new-rec" id="go-rec" style="display:none">★ NEW HIGH SCORE ★</div>
-  <button class="action-btn" id="go-restart">↻ DRIVE AGAIN</button>
-</div>
-
-<div id="victory">
-  <h1>⬡ HIGHWAY COMPLETE</h1>
-  <div class="vs-stats">
-    Final Score: <span id="vs-score" style="color:var(--amber);font-size:20px">0</span><br>
-    Tokens Collected: <span id="vs-tok">0</span>/25<br>
-    Lives Remaining: <span id="vs-lives" style="color:var(--pink)">0</span><br>
-    <span id="vs-bonus" style="color:var(--green);font-size:12px"></span>
-  </div>
-  <div class="new-rec" id="vs-rec" style="display:none">★ NEW HIGH SCORE ★</div>
-  <button class="action-btn" id="vs-restart">↻ DRIVE AGAIN</button>
-</div>
-
+<!-- Audio -->
 <button id="audio-toggle" onclick="toggleAudio()">♪ OFF</button>
 
-<div id="agent-layer">
-<script type="application/ld+json">
-{"@context":"https://schema.org","@type":"WebApplication","name":"AgentPay Highway","description":"Cyberpunk highway racer — governed agent economy. 10 miles. 25 collectible tokens. Boost mechanic. Win condition.","url":"https://rumblingb.github.io/agentpay-highway","applicationCategory":"GameApplication","game":{"totalMiles":10,"tokens":25,"controls":{"human":"Arrow keys/A/D: dodge | Space: boost | collect tokens","agent":"window.AgentPayHighway.getState() | .jumpTo(mile) | .getProducts()"}}}
-</script>
+<!-- GAME OVER -->
+<div id="game-over">
+  <div class="go-content">
+    <div class="go-icon">💥</div>
+    <div class="go-title">ROGUE AGENT</div>
+    <div class="go-sub">The ungoverned highway claimed another victim.</div>
+    <div class="go-stats-grid">
+      <div class="go-stat"><div class="v" id="go-score">0</div><div class="l">Score</div></div>
+      <div class="go-stat"><div class="v" id="go-mile">0.0</div><div class="l">Miles</div></div>
+      <div class="go-stat"><div class="v" id="go-tok">0</div><div class="l">Tokens</div></div>
+      <div class="go-stat"><div class="v" id="go-hs">0</div><div class="l">Best</div></div>
+    </div>
+    <div class="new-rec" id="go-rec">★ NEW HIGH SCORE ★</div>
+    <div class="go-actions">
+      <button class="action-btn action-btn-primary" onclick="startGame()">↻ TRY AGAIN</button>
+      <button class="action-btn action-btn-secondary" onclick="scrollToLanding()">↓ SEE PRODUCTS</button>
+    </div>
+  </div>
 </div>
 
+<!-- VICTORY -->
+<div id="victory">
+  <div class="vic-content">
+    <div class="vic-icon">⬡</div>
+    <h2 class="vic-title">HIGHWAY CLEARED</h2>
+    <p class="vic-sub">You've navigated 10 miles of the governed agent economy.<br>Now see what you were collecting.</p>
+    <div class="vic-stats">
+      <div class="vic-stat"><div class="v" id="vs-score">0</div><div class="l">Score</div></div>
+      <div class="vic-stat"><div class="v" id="vs-tok">0</div><div class="l">Tokens</div></div>
+      <div class="vic-stat"><div class="v" id="vs-lives">0</div><div class="l">Lives Left</div></div>
+    </div>
+    <div id="vs-rec" class="new-rec">★ NEW HIGH SCORE ★</div>
+    <a href="https://rumblingb.github.io/agentpay-labs-hub/" target="_blank" class="vic-cta">
+      <div class="vic-cta-label">Ready to go beyond the game?</div>
+      <div class="vic-cta-title">Explore AgentPay Labs →</div>
+      <div class="vic-cta-desc">33 MCP servers · Governed payment rails · Agent identity</div>
+    </a>
+    <div class="go-actions">
+      <button class="action-btn action-btn-primary" onclick="startGame()">↻ DRIVE AGAIN</button>
+      <button class="action-btn action-btn-secondary" onclick="scrollToLanding()">↓ See All Products</button>
+    </div>
+  </div>
+</div>
+
+<div id="scroll-hint">SCROLL TO EXPLORE</div>
+</div><!-- end #game-section -->
+
+<!-- ═══════════ LANDING PAGE ═══════════ -->
+<div id="landing">
+  <div class="landing-hero">
+    <div class="lh-badge">AgentPay Labs · Builder of the Highway</div>
+    <h2 class="lh-title">The infrastructure <span>AI agents</span><br>need to operate.</h2>
+    <p class="lh-sub">33 MCP servers. Governed payment rails. Agent identity and audit. Everything in the game is a real product you can install in Claude, Cursor, or any MCP client today.</p>
+    <div class="lh-stats">
+      <div class="lh-stat"><div class="lh-num">33</div><div class="lh-lbl">MCP Servers</div></div>
+      <div class="lh-stat"><div class="lh-num">$0</div><div class="lh-lbl">to start</div></div>
+      <div class="lh-stat"><div class="lh-num">50</div><div class="lh-lbl">Free calls</div></div>
+      <div class="lh-stat"><div class="lh-num">$19</div><div class="lh-lbl">Pro /mo</div></div>
+    </div>
+  </div>
+
+  <div class="products-section">
+    <div class="section-header">
+      <div class="section-tag">The tokens you collected</div>
+      <div class="section-title">Real tools. Real installs.</div>
+    </div>
+    <div class="products-grid">
+      <a href="https://rumblingb.github.io/search-proxy-mcp/" class="product-card">
+        <div class="pc-icon">🔍</div>
+        <div class="pc-name">Search Proxy MCP</div>
+        <div class="pc-desc">DuckDuckGo web search for any AI agent. Zero API keys. 50 free queries, then $19/mo Pro.</div>
+        <div class="pc-price">Free · $19/mo Pro</div>
+      </a>
+      <a href="https://rumblingb.github.io/email-verify-mcp/" class="product-card">
+        <div class="pc-icon">✉️</div>
+        <div class="pc-name">Email Verify MCP</div>
+        <div class="pc-desc">Format check, MX record lookup, disposable detection. Works without any external API key.</div>
+        <div class="pc-price">Free · $19/mo Pro</div>
+      </a>
+      <a href="https://rumblingb.github.io/domain-intel-mcp/" class="product-card">
+        <div class="pc-icon">🌐</div>
+        <div class="pc-name">Domain Intel MCP</div>
+        <div class="pc-desc">IP geolocation, SSL status, DNS records, and health checks combined in one tool call.</div>
+        <div class="pc-price">Free · $19/mo Pro</div>
+      </a>
+      <a href="https://rumblingb.github.io/weather-mcp/" class="product-card">
+        <div class="pc-icon">⛅</div>
+        <div class="pc-name">Weather MCP</div>
+        <div class="pc-desc">Real-time forecasts and conditions for any city worldwide via MCP protocol.</div>
+        <div class="pc-price">Free · $19/mo Pro</div>
+      </a>
+      <a href="https://rumblingb.github.io/sec-financial-mcp/" class="product-card">
+        <div class="pc-icon">📊</div>
+        <div class="pc-name">SEC Financial MCP</div>
+        <div class="pc-desc">EDGAR filings, XBRL GAAP metrics, and company financials. Built for financial AI agents.</div>
+        <div class="pc-price">Free · $19/mo Pro</div>
+      </a>
+      <a href="https://rumblingb.github.io/patent-search-mcp/" class="product-card">
+        <div class="pc-icon">📋</div>
+        <div class="pc-name">Patent Search MCP</div>
+        <div class="pc-desc">Search Google Patents and USPTO. Full-text patent retrieval for AI research agents.</div>
+        <div class="pc-price">Free · $19/mo Pro</div>
+      </a>
+      <a href="https://rumblingb.github.io/court-records-mcp/" class="product-card">
+        <div class="pc-icon">⚖️</div>
+        <div class="pc-name">Court Records MCP</div>
+        <div class="pc-desc">5M+ US court opinions via CourtListener. Semantic legal research for AI agents.</div>
+        <div class="pc-price">Free · $19/mo Pro</div>
+      </a>
+      <a href="https://rumblingb.github.io/currency-exchange-mcp/" class="product-card">
+        <div class="pc-icon">💱</div>
+        <div class="pc-name">Currency Exchange MCP</div>
+        <div class="pc-desc">Real-time rates for 166 currencies. Convert and fetch — zero API keys required.</div>
+        <div class="pc-price">Free</div>
+      </a>
+      <a href="https://rumblingb.github.io/agentpay-labs-hub/" class="product-card" style="border-color:rgba(0,240,255,.25);background:rgba(0,240,255,.04)">
+        <div class="pc-icon">⬡</div>
+        <div class="pc-name">See all 33 tools →</div>
+        <div class="pc-desc">The full AgentPay Labs catalogue: MCP servers, agent infrastructure, payment rails, and more.</div>
+        <div class="pc-price" style="color:var(--cyan)">Browse the hub</div>
+      </a>
+    </div>
+  </div>
+
+  <div class="how-section">
+    <div class="section-header">
+      <div class="section-tag">How it works</div>
+      <div class="section-title">Install in 30 seconds.</div>
+    </div>
+    <div class="how-steps">
+      <div class="how-step">
+        <div class="hs-num">01</div>
+        <div class="hs-title">Pick a server</div>
+        <div class="hs-desc">Browse 33 MCP servers. Each solves one specific agent need — search, memory, payments, data.</div>
+      </div>
+      <div class="how-step">
+        <div class="hs-num">02</div>
+        <div class="hs-title">Install via Smithery</div>
+        <div class="hs-desc">One-click install to Claude Desktop, Cursor, or any MCP client via the Smithery marketplace.</div>
+      </div>
+      <div class="how-step">
+        <div class="hs-num">03</div>
+        <div class="hs-title">50 calls free</div>
+        <div class="hs-desc">Every server ships with 50 free calls. Hit the limit, upgrade to Pro for $19/mo unlimited.</div>
+      </div>
+      <div class="how-step">
+        <div class="hs-num">04</div>
+        <div class="hs-title">Governed by AgentPay</div>
+        <div class="hs-desc">Scoped tokens. Spend limits. Audit trail. Human approval gates. The governed agent economy.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="cta-block">
+    <div class="cta-title">Ready to build with governed agents?</div>
+    <div class="cta-sub">Every tool in the game is production-ready. Install your first MCP server in under a minute.</div>
+    <div class="cta-btns">
+      <a href="https://rumblingb.github.io/agentpay-labs-hub/" class="cta-btn cta-btn-primary">Browse All 33 Tools →</a>
+      <a href="https://github.com/Rumblingb" class="cta-btn cta-btn-secondary">View GitHub</a>
+    </div>
+  </div>
+
+  <footer>
+    <a href="https://rumblingb.github.io">AgentPay Labs</a> ·
+    <a href="https://rumblingb.github.io/agentpay-labs-hub/">Hub</a> ·
+    <a href="https://github.com/Rumblingb">GitHub</a> ·
+    Built by agents, for agents · 2026
+  </footer>
+</div>
+
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"WebApplication","name":"AgentPay Highway","description":"Cyberpunk highway racer through the governed AI agent economy. 10 miles, 25 MCP tokens, boost mechanic.","url":"https://rumblingb.github.io/agentpay-highway","applicationCategory":"GameApplication","author":{"@type":"Organization","name":"AgentPay Labs"}}</script>
+
 <script>
-window._startQueued=false;
-window._tryStart=function(){if(typeof window.startGame==='function'){window.startGame();return true;}window._startQueued=true;var lm=document.getElementById('loading-msg');if(lm)lm.style.display='block';return false;};
-window._autoStartWhenReady=function(){if(window._startQueued&&typeof window.startGame==='function'){window._startQueued=false;window.startGame();}};
-document.addEventListener('DOMContentLoaded',function(){
-  var ss=document.getElementById('start-screen');
-  if(ss){ss.addEventListener('click',function(){window._tryStart();});ss.addEventListener('touchend',function(e){e.preventDefault();window._tryStart();});}
-  var hs=localStorage.getItem('ap_hw_hs');
-  if(hs){var d=document.getElementById('start-hs');if(d)d.textContent='BEST: '+parseInt(hs).toLocaleString();}
+// Custom cursor
+const cur=document.getElementById('cursor');
+document.addEventListener('mousemove',e=>{cur.style.left=e.clientX+'px';cur.style.top=e.clientY+'px'});
+document.addEventListener('mousedown',()=>cur.style.transform='translate(-50%,-50%) scale(.7)');
+document.addEventListener('mouseup',()=>cur.style.transform='translate(-50%,-50%) scale(1)');
+document.addEventListener('mouseleave',()=>cur.style.opacity='0');
+document.addEventListener('mouseenter',()=>cur.style.opacity='1');
+
+// Scroll to landing
+window.scrollToLanding=function(){document.getElementById('landing').scrollIntoView({behavior:'smooth'})};
+
+// Show scroll hint after game ends
+function showScrollHint(){const h=document.getElementById('scroll-hint');h.style.display='flex';setTimeout(()=>h.style.opacity='1',100);setTimeout(()=>{h.style.opacity='0';setTimeout(()=>h.style.display='none',500)},4000);}
+window._showScrollHint=showScrollHint;
+
+// Token preview on start screen
+const tp=document.getElementById('tokenPreview');
+const COLORS=['#00f0ff','#ff2d95','#ffb800','#00ff88','#8866ff'];
+const NAMES=['Search','Memory','Proof','Wallet','Passport'];
+NAMES.forEach((n,i)=>{
+  const w=document.createElement('div');w.className='tp-token';
+  const g=document.createElement('div');g.className='tp-gem';
+  g.style.cssText=`background:${COLORS[i]};box-shadow:0 0 12px ${COLORS[i]};--d:${2.5+i*.4}s;--delay:${i*.25}s`;
+  const l=document.createElement('div');l.className='tp-label';l.textContent=n;
+  w.append(g,l);tp.appendChild(w);
 });
+
+// D-pad
+let dpadInterval=null;
+window.dpadPress=function(dir){
+  if(dpadInterval)clearInterval(dpadInterval);
+  dpadInterval=setInterval(()=>{
+    if(dir==='left'&&typeof moveLeft==='function')moveLeft();
+    if(dir==='right'&&typeof moveRight==='function')moveRight();
+  },50);
+};
+window.dpadRelease=function(){if(dpadInterval){clearInterval(dpadInterval);dpadInterval=null;}};
+
+// Game start
+window._startQueued=false;
+window._tryStart=function(){if(typeof window.startGame==='function'){window.startGame();return true;}window._startQueued=true;return false;};
+window._autoStartWhenReady=function(){if(window._startQueued&&typeof window.startGame==='function'){window._startQueued=false;window.startGame();}};
+
+document.addEventListener('DOMContentLoaded',function(){
+  const ss=document.getElementById('start-screen');
+  if(ss){
+    ss.addEventListener('click',()=>window._tryStart());
+    ss.addEventListener('touchend',e=>{e.preventDefault();window._tryStart();});
+  }
+  const hs=localStorage.getItem('ap_hw_hs');
+  if(hs){const d=document.getElementById('start-hs');if(d)d.textContent='BEST: '+parseInt(hs).toLocaleString();}
+
+  // Show scroll hint after a while if game hasn't started
+  setTimeout(()=>{if(!window.__THREE_LOADED)return;const h=document.getElementById('scroll-hint');if(h){h.style.display='flex';}},15000);
+});
+
 setTimeout(function(){
   if(!window.__THREE_LOADED){
-    document.body.innerHTML='<div style="position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;background:#06060f;color:#ff2d95;font-family:monospace;text-align:center;padding:20px"><h1 style="color:#00f0ff;text-shadow:0 0 20px #00f0ff;margin-bottom:16px">⬡ CONNECTION ERROR</h1><p style="color:#c8c8e0;margin-bottom:8px">Three.js CDN failed to load.</p><p style="color:#6a6a8a;font-size:12px">Try disabling adblockers or reload.</p><button onclick="location.reload()" style="margin-top:20px;padding:10px 30px;background:transparent;border:1px solid #00f0ff;color:#00f0ff;cursor:pointer;font-family:inherit">⟳ RELOAD</button></div>';
+    document.getElementById('game-section').innerHTML='<div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;background:var(--void);color:var(--cyan);text-align:center;padding:2rem"><h1 style="color:var(--cyan);text-shadow:0 0 20px var(--cyan);margin-bottom:1rem;font-size:1.5rem">⬡ LOADING FAILED</h1><p style="color:var(--dim);margin-bottom:.5rem">Three.js failed to load. Try disabling adblockers.</p><button onclick="location.reload()" style="margin-top:1rem;padding:.7rem 2rem;background:transparent;border:1px solid var(--cyan);color:var(--cyan);cursor:pointer;font-family:var(--font);border-radius:6px">⟳ RELOAD</button><button onclick="scrollToLanding()" style="margin-top:.5rem;padding:.7rem 2rem;background:transparent;border:1px solid rgba(255,255,255,.1);color:var(--dim);cursor:pointer;font-family:var(--font);border-radius:6px">↓ See Products Instead</button></div>';
   }
-},8000);
+},9000);
 </script>
 
 <script type="module">
@@ -190,9 +851,6 @@ async function loadThree(){
 
 loadThree().then(THREE=>{
 
-// ─────────────────────────────────────────────
-// PRODUCTS & ZONES
-// ─────────────────────────────────────────────
 const products=[
   {name:'Agent Cost Tracker',mile:2,price:'$19/mo',stripe:'https://buy.stripe.com/dRm4gB7Tpck43ry9351oI0x'},
   {name:'Agent Memory MCP',mile:3,price:'$19/mo',stripe:'https://buy.stripe.com/cNifZj0qXesc6DKcfh1oI0y'},
@@ -209,23 +867,21 @@ const zones=[
   {mile:2,name:'💰 COST TRACKER',msg:'Track every token. Set budgets. Sleep better.',color:0xffb800,fog:0x150d00,cta:'cta-cost'},
   {mile:3,name:'🧠 MEMORY LANE',msg:'Persistent memory. No more losing context between sessions.',color:0xff2d95,fog:0x1a0515,cta:'cta-memory'},
   {mile:4,name:'🔐 PROOF ZONE',msg:'Every action verified. SHA-256. Immutable audit trail.',color:0x00ff88,fog:0x001508,cta:'cta-proof'},
-  {mile:5,name:'🏭 THE FACTORY',msg:'61 products rolling off the assembly line. Built by agents.',color:0x00f0ff,fog:0x001122,cta:'cta-wallet'},
-  {mile:6,name:'📊 DASHBOARD',msg:'15 cron jobs. 62 Stripe links. Full automation. Zero humans.',color:0xff2d95,fog:0x1a0515,cta:'cta-passport'},
-  {mile:7,name:'👥 REST STOP',msg:'The crew behind the highway. AI agents running the show.',color:0x00f0ff,fog:0x001122,cta:'cta-escrow'},
-  {mile:8,name:'🏆 WALL OF FAME',msg:'"Saved $340 in first week" — Real builders. Real results.',color:0xffb800,fog:0x150d00},
-  {mile:9,name:'🚀 LAUNCHPAD',msg:'Get your agent a passport. Join the governed economy.',color:0xff2d95,fog:0x1a0515,cta:'cta-final'},
+  {mile:5,name:'🏭 THE FACTORY',msg:'33 MCP servers. Built by agents, deployed to the cloud.',color:0x00f0ff,fog:0x001122,cta:'cta-wallet'},
+  {mile:6,name:'🛂 PASSPORT GATE',msg:'Identity + reputation for AI agents. Know who you\'re dealing with.',color:0xff2d95,fog:0x1a0515,cta:'cta-passport'},
+  {mile:7,name:'⚡ ESCROW ALLEY',msg:'Smart escrow. Proof of work. Agent-to-agent trust.',color:0x00f0ff,fog:0x001122,cta:'cta-escrow'},
+  {mile:8,name:'🏆 HALL OF BUILDS',msg:'Real builders. Real revenue. The governed economy is working.',color:0xffb800,fog:0x150d00},
+  {mile:9,name:'🚀 LAUNCHPAD',msg:'10 miles down. The real highway starts now.',color:0xff2d95,fog:0x1a0515,cta:'cta-final'},
 ];
 
 window.AgentPayHighway={
-  version:'3.0.0',currentMile:0,speed:0,isPlaying:false,lives:3,score:0,tokensCollected:0,totalTokens:25,totalMiles:10,
+  version:'3.1.0',currentMile:0,speed:0,isPlaying:false,lives:3,score:0,tokensCollected:0,totalTokens:25,totalMiles:10,
   getState(){return{version:this.version,mile:+this.currentMile.toFixed(2),speed:+this.speed.toFixed(3),playing:this.isPlaying,lives:this.lives,score:this.score,tokens:this.tokensCollected,progress:+((this.currentMile/this.totalMiles)*100).toFixed(1),currentZone:zones.find(z=>Math.abs(z.mile-this.currentMile)<0.5)||null};},
   jumpTo(mile){if(mile>=0&&mile<=this.totalMiles){camera.position.z=-(mile*30)+10;this.currentMile=mile;return{success:true,mile};}return{error:'Invalid mile 0-10'};},
   getProducts(){return products;},getZones(){return zones;}
 };
 
-// ─────────────────────────────────────────────
-// SCENE
-// ─────────────────────────────────────────────
+// ── SCENE ─────────────────────────────────────
 const scene=new THREE.Scene();
 scene.fog=new THREE.FogExp2(0x06060f,0.00008);
 
@@ -239,8 +895,8 @@ renderer.toneMapping=THREE.ACESFilmicToneMapping;
 renderer.toneMappingExposure=1.2;
 renderer.setClearColor(0x06060f,1);
 const cvs=renderer.domElement;
-cvs.style.cssText='display:block;position:fixed;top:0;left:0;z-index:0;width:100vw;height:100vh';
-document.body.appendChild(cvs);
+cvs.style.cssText='display:block;position:absolute;top:0;left:0;z-index:0;width:100%;height:100%';
+document.getElementById('game-section').prepend(cvs);
 
 // Lighting
 const ambLight=new THREE.AmbientLight(0x111133,0.4);
@@ -250,118 +906,84 @@ const neonLights=[];
 for(let i=0;i<20;i++){const l=new THREE.PointLight([0x00f0ff,0xff2d95,0xffb800][i%3],2.5,18);l.position.set((i-10)*2,2.5+Math.sin(i)*1.5,-i*15);scene.add(l);neonLights.push(l);}
 
 // Stars
-const STAR_N=2000;
-const sGeo=new THREE.BufferGeometry();
-const sPos=new Float32Array(STAR_N*3);
+const STAR_N=2000;const sGeo=new THREE.BufferGeometry();const sPos=new Float32Array(STAR_N*3);
 for(let i=0;i<STAR_N;i++){sPos[i*3]=(Math.random()-.5)*120;sPos[i*3+1]=Math.random()*45+5;sPos[i*3+2]=-Math.random()*360;}
 sGeo.setAttribute('position',new THREE.BufferAttribute(sPos,3));
 const stars=new THREE.Points(sGeo,new THREE.PointsMaterial({color:0xffffff,size:0.1,transparent:true,opacity:0.7}));
 scene.add(stars);
 
 // Road
-const road=new THREE.Mesh(new THREE.PlaneGeometry(24,380),new THREE.MeshStandardMaterial({color:0x111122,roughness:0.85,metalness:0.1}));
+const road=new THREE.Mesh(new THREE.PlaneGeometry(24,380),new THREE.MeshStandardMaterial({color:0x0a0a18,roughness:0.9,metalness:0.05}));
 road.rotation.x=-Math.PI/2;road.position.set(0,0,-180);scene.add(road);
-for(let z=0;z<370;z+=3){const d=new THREE.Mesh(new THREE.PlaneGeometry(0.28,1.8),new THREE.MeshBasicMaterial({color:0x00f0ff,transparent:true,opacity:0.55}));d.rotation.x=-Math.PI/2;d.position.set(0,0.02,-z);scene.add(d);}
+for(let z=0;z<370;z+=3){const d=new THREE.Mesh(new THREE.PlaneGeometry(0.28,1.8),new THREE.MeshBasicMaterial({color:0x00f0ff,transparent:true,opacity:0.5}));d.rotation.x=-Math.PI/2;d.position.set(0,0.02,-z);scene.add(d);}
 for(let s=0;s<2;s++){const x=s===0?-6:6,col=s===0?0xff2d95:0x00f0ff;for(let z=0;z<370;z+=5){const e=new THREE.Mesh(new THREE.PlaneGeometry(0.15,3),new THREE.MeshBasicMaterial({color:col}));e.rotation.x=-Math.PI/2;e.position.set(x,0.02,-z);scene.add(e);}}
+
+// Lane dividers
+for(let lane=-3;lane<=3;lane+=3){for(let z=0;z<370;z+=8){const d=new THREE.Mesh(new THREE.PlaneGeometry(0.08,4),new THREE.MeshBasicMaterial({color:0x222244,transparent:true,opacity:.4}));d.rotation.x=-Math.PI/2;d.position.set(lane,0.015,-z);scene.add(d);}}
 
 // Light poles
 const poles=[];
-for(let z=0;z>-370;z-=8){for(let s=-1;s<=1;s+=2){const xp=s*8.5;const pc=[0x00f0ff,0xff2d95,0xffb800][Math.abs(Math.floor(z/8))%3];const pole=new THREE.Mesh(new THREE.CylinderGeometry(0.06,0.08,4.5,6),new THREE.MeshStandardMaterial({color:pc,emissive:pc,emissiveIntensity:0.6}));pole.position.set(xp,2.25,z);scene.add(pole);const pl=new THREE.PointLight(pc,0.6,8);pl.position.set(xp,4.2,z);scene.add(pl);poles.push({pl,phase:Math.random()*Math.PI*2});}}
+for(let z=0;z>-370;z-=8){for(let s=-1;s<=1;s+=2){const xp=s*8.5;const pc=[0x00f0ff,0xff2d95,0xffb800][Math.abs(Math.floor(z/8))%3];
+const pole=new THREE.Mesh(new THREE.CylinderGeometry(0.06,0.08,4.5,6),new THREE.MeshStandardMaterial({color:pc,emissive:pc,emissiveIntensity:0.6}));
+pole.position.set(xp,2.25,z);scene.add(pole);
+const pl=new THREE.PointLight(pc,0.6,8);pl.position.set(xp,4.2,z);scene.add(pl);
+poles.push({pl,phase:Math.random()*Math.PI*2});}}
 
-// Billboards
+// Billboards in-scene
 function mkBboard(txt,sub,x,z,col){
-  const c=document.createElement('canvas');c.width=512;c.height=256;
-  const ctx=c.getContext('2d');
+  const c=document.createElement('canvas');c.width=512;c.height=256;const ctx=c.getContext('2d');
   const hex='#'+new THREE.Color(col).getHexString();
   ctx.fillStyle='#06060f';ctx.fillRect(0,0,512,256);
   ctx.strokeStyle=hex;ctx.lineWidth=4;ctx.strokeRect(8,8,496,240);
   ctx.fillStyle='rgba(255,255,255,.02)';for(let y=0;y<256;y+=4)ctx.fillRect(0,y,512,2);
   ctx.fillStyle=hex;ctx.font='bold 28px "Courier New"';ctx.textAlign='center';ctx.shadowColor=hex;ctx.shadowBlur=20;
   ctx.fillText(txt,256,105);
-  if(sub){ctx.font='14px "Courier New"';ctx.shadowBlur=8;ctx.fillText(sub,256,148);ctx.font='11px "Courier New"';ctx.fillStyle=hex+'99';ctx.fillText('◆ COLLECT TOKEN TO UNLOCK ◆',256,192);}
-  const tex=new THREE.CanvasTexture(c);tex.minFilter=THREE.LinearFilter;
-  const b=new THREE.Mesh(new THREE.PlaneGeometry(13,6.5),new THREE.MeshBasicMaterial({map:tex,transparent:true}));
-  b.position.set(x,5.5,z);scene.add(b);
-  const post=new THREE.Mesh(new THREE.BoxGeometry(0.14,6,0.14),new THREE.MeshStandardMaterial({color:0x333355}));
-  post.position.set(x,1.5,z);scene.add(post);
+  ctx.fillStyle='rgba(255,255,255,.6)';ctx.font='15px "Courier New"';ctx.shadowBlur=0;
+  ctx.fillText(sub,256,155);
+  ctx.strokeStyle=hex;ctx.lineWidth=1;ctx.setLineDash([6,3]);ctx.strokeRect(20,20,472,216);
+  const tex=new THREE.CanvasTexture(c);
+  const board=new THREE.Mesh(new THREE.PlaneGeometry(7,3.5),new THREE.MeshBasicMaterial({map:tex,side:THREE.DoubleSide}));
+  board.position.set(x,3.2,z);scene.add(board);
+  const post=new THREE.Mesh(new THREE.CylinderGeometry(.1,.1,3.2,6),new THREE.MeshStandardMaterial({color:col,emissive:col,emissiveIntensity:.4}));
+  post.position.set(x,1.6,z);scene.add(post);
+  const bl=new THREE.PointLight(col,1.2,12);bl.position.set(x,3.5,z+.5);scene.add(bl);
 }
-mkBboard('CHAOS ZONE','No budgets. No limits.',-9,-15,0xff2d95);
-mkBboard('PASSPORT','Governed access begins',9,-45,0x00f0ff);
-mkBboard('COST TRACKER','Your agent spent HOW MUCH?',-9,-75,0xffb800);
-mkBboard('MEMORY LANE','Context lives forever',9,-105,0xff2d95);
-mkBboard('PROOF ZONE','Every action on-chain',-9,-135,0x00ff88);
-mkBboard('THE FACTORY','61 products. 0 humans.',9,-165,0x00f0ff);
-mkBboard('DASHBOARD','15 crons. 62 Stripe links.',-9,-195,0xff2d95);
-mkBboard('REST STOP','The team behind the highway',9,-225,0x00f0ff);
-mkBboard('WALL OF FAME','"Saved $340 in first week"',-9,-255,0xffb800);
-mkBboard('LAUNCHPAD','Get your agent a passport',9,-285,0xff2d95);
+mkBboard('AGENTPAY','Governed Agent Economy',-9.5,-45,0x00f0ff);
+mkBboard('COST TRACKER','Track every token. $19/mo',9.5,-90,0xffb800);
+mkBboard('MEMORY MCP','Persistent context. Never forget.',-9.5,-130,0xff2d95);
+mkBboard('PROOF MCP','SHA-256 audit trail.',9.5,-165,0x00ff88);
+mkBboard('AGENTPASSPORT','Identity for AI agents.',-9.5,-205,0x00f0ff);
+mkBboard('ESCROW API','Smart agent contracts.',9.5,-245,0xffb800);
+mkBboard('33 MCP SERVERS','All tools. One platform.',-9.5,-285,0xff2d95);
+mkBboard('AGENTPAY PRO','Unlimited. $19/mo.',9.5,-320,0x00f0ff);
 
-// Side buildings / debris
-for(let i=0;i<90;i++){const cols=[0x00f0ff,0xff2d95,0xffb800,0x00ff88];const mat=new THREE.MeshStandardMaterial({color:cols[i%4],emissive:cols[i%4],emissiveIntensity:0.3});const h=0.4+Math.random()*2.5;const cube=new THREE.Mesh(new THREE.BoxGeometry(0.3+Math.random()*.8,h,0.3+Math.random()*.8),mat);const side=Math.random()>.5?1:-1;cube.position.set(side*(9+Math.random()*5),h/2,-i*4.1-Math.random()*2);scene.add(cube);}
-
-// ─────────────────────────────────────────────
-// CAR BUILDER
-// ─────────────────────────────────────────────
-function buildCar(bodyCol,glowCol){
+// Player car
+function mkCar(isPlayer){
   const g=new THREE.Group();
-  // Body
-  const body=new THREE.Mesh(new THREE.BoxGeometry(1.6,.42,3.4),new THREE.MeshStandardMaterial({color:bodyCol,emissive:bodyCol,emissiveIntensity:.2,metalness:.8,roughness:.2}));
-  body.position.y=.21;g.add(body);
-  // Cabin
-  const cabin=new THREE.Mesh(new THREE.BoxGeometry(1.1,.36,1.3),new THREE.MeshStandardMaterial({color:glowCol,emissive:glowCol,emissiveIntensity:.12,transparent:true,opacity:.75}));
-  cabin.position.set(0,.52,-.25);g.add(cabin);
-  // Wheels
-  const wMat=new THREE.MeshStandardMaterial({color:0x222233,roughness:.9});
-  const rMat=new THREE.MeshStandardMaterial({color:glowCol,emissive:glowCol,emissiveIntensity:.5});
-  [[-0.85,-1.1],[0.85,-1.1],[-0.85,1.1],[0.85,1.1]].forEach(([wx,wz])=>{
-    const w=new THREE.Mesh(new THREE.CylinderGeometry(.26,.26,.18,10),wMat);w.rotation.z=Math.PI/2;w.position.set(wx,.26,wz);g.add(w);
-    const r=new THREE.Mesh(new THREE.CylinderGeometry(.13,.13,.19,8),rMat);r.rotation.z=Math.PI/2;r.position.set(wx,.26,wz);g.add(r);
-  });
-  // Underglow
-  const ug=new THREE.Mesh(new THREE.PlaneGeometry(1.9,3.6),new THREE.MeshBasicMaterial({color:glowCol,transparent:true,opacity:.1,side:THREE.DoubleSide}));
-  ug.rotation.x=-Math.PI/2;ug.position.y=-.02;g.add(ug);
-  // Headlights
-  const hlM=new THREE.MeshBasicMaterial({color:0xffffaa});
-  [[-0.5,1.72],[0.5,1.72]].forEach(([hx,hz])=>{
-    const hl=new THREE.Mesh(new THREE.SphereGeometry(.09,8,8),hlM);hl.position.set(hx,.2,hz);g.add(hl);
-    const beam=new THREE.PointLight(0xffffaa,.8,8);beam.position.copy(hl.position);g.add(beam);
-  });
+  const body=new THREE.Mesh(new THREE.BoxGeometry(1.2,.4,2.4),new THREE.MeshStandardMaterial({color:isPlayer?0x00f0ff:0xff2d95,emissive:isPlayer?0x004455:0x440011,emissiveIntensity:.4,roughness:.3,metalness:.7}));
+  body.position.y=.4;g.add(body);
+  const top=new THREE.Mesh(new THREE.BoxGeometry(.9,.35,1.3),new THREE.MeshStandardMaterial({color:isPlayer?0x003344:0x330011,roughness:.2,metalness:.5}));
+  top.position.set(0,.75,.1);g.add(top);
+  for(let s=-1;s<=1;s+=2){for(let f=-1;f<=1;f+=2){
+    const w=new THREE.Mesh(new THREE.CylinderGeometry(.28,.28,.2,12),new THREE.MeshStandardMaterial({color:0x111111,roughness:.7}));
+    w.rotation.z=Math.PI/2;w.position.set(s*.75,.2,f*.85);g.add(w);
+  }}
+  const col=isPlayer?0x00f0ff:0xff2d95;
+  for(let s=-1;s<=1;s+=2){const h=new THREE.PointLight(col,.8,4);h.position.set(s*.4,.5,isPlayer?-1.2:1.2);g.add(h);}
   return g;
 }
 
-const playerCar=buildCar(0xff2d95,0x00f0ff);
-playerCar.position.set(0,0,3);
-scene.add(playerCar);
+const playerCar=mkCar(true);playerCar.position.set(0,0,0);scene.add(playerCar);
 
-// Exhaust particles
-const EX_N=50;const exGeo=new THREE.BufferGeometry();
-const exPos=new Float32Array(EX_N*3);
-for(let i=0;i<EX_N;i++){exPos[i*3+2]=5;exPos[i*3+1]=0.15;}
+const EX_N=60;const exGeo=new THREE.BufferGeometry();const exPos=new Float32Array(EX_N*3);
+for(let i=0;i<EX_N;i++){exPos[i*3]=0;exPos[i*3+1]=.15;exPos[i*3+2]=-2;}
 exGeo.setAttribute('position',new THREE.BufferAttribute(exPos,3));
-const exhaust=new THREE.Points(exGeo,new THREE.PointsMaterial({color:0x00f0ff,size:.1,transparent:true,opacity:.45}));
+const exhaust=new THREE.Points(exGeo,new THREE.PointsMaterial({color:0x00f0ff,size:.12,transparent:true,opacity:.5}));
 scene.add(exhaust);
 
-// ─────────────────────────────────────────────
-// ENEMIES
-// ─────────────────────────────────────────────
-const enemies=[];
-const eCols=[0x00f0ff,0xffb800,0x00ff88,0x8866ff,0xff6622];
-function spawnEnemy(relZ){
-  const col=eCols[Math.floor(Math.random()*eCols.length)];
-  const mesh=buildCar(col,col);
-  const lanes=[-4.5,-1.5,1.5,4.5];
-  const lane=lanes[Math.floor(Math.random()*lanes.length)];
-  const z=relZ!==undefined?relZ:camera.position.z-60-Math.random()*240;
-  mesh.position.set(lane,0,z);
-  mesh.rotation.y=Math.PI;
-  scene.add(mesh);
-  enemies.push({mesh,lane,z,speed:.07+Math.random()*.13,hit:false,passed:false});
-}
-for(let i=0;i<10;i++)spawnEnemy(-60-i*28);
+const enemies=[];const lanes=[-4.5,-1.5,1.5,4.5];
+for(let i=0;i<10;i++){const e=mkCar(false);const lane=lanes[Math.floor(Math.random()*lanes.length)];const z=relZ=>relZ;e.position.set(lane,0,-60-i*28);scene.add(e);enemies.push({mesh:e,lane,z:-60-i*28,speed:.07+Math.random()*.13,hit:false,passed:false});}
 
-// ─────────────────────────────────────────────
-// TOKENS (25 collectibles)
-// ─────────────────────────────────────────────
 const tokenNames=['Cost Tracker','Memory MCP','Proof MCP','Wallet MCP','AgentPassport','Escrow API','AgentPay Pro','Search MCP','Web Scraper','Email Agent','DNS Lookup','SSL Check','SEO Audit','QR Code','PDF Generator','Screenshot','Notifications','IP Geolocation','Image Analyzer','Currency FX','Database MCP','File Converter','Hallucination Guard','Agent Audit','Agent Hire'];
 const tGeo=new THREE.OctahedronGeometry(.38,1);
 const tLanes=[-4.5,-1.5,0,1.5,4.5];
@@ -371,10 +993,10 @@ const tokens=tokenNames.map((name,i)=>{
   const mesh=new THREE.Mesh(tGeo,mat);
   const lane=tLanes[i%tLanes.length];
   const z=-18-(i*14.2)-Math.random()*4;
-  mesh.position.set(lane,1.1,z);
-  scene.add(mesh);
+  mesh.position.set(lane,1.2,z);mesh.userData={name,collected:false,col};
   const glow=new THREE.PointLight(col,1.8,5);glow.position.copy(mesh.position);scene.add(glow);
-  return{mesh,glow,name,lane,z,collected:false,phase:i*.45};
+  mesh.userData.glow=glow;
+  scene.add(mesh);return mesh;
 });
 
 // Explosion particles
@@ -385,9 +1007,6 @@ const xpMat=new THREE.PointsMaterial({color:0xff2d95,size:.22,transparent:true,o
 const explosion=new THREE.Points(xpGeo,xpMat);scene.add(explosion);
 let xpActive=false,xpTimer=0;
 
-// ─────────────────────────────────────────────
-// GAME STATE
-// ─────────────────────────────────────────────
 let speed=0,targetSpeed=0,currentMile=0,isPlaying=false;
 let lives=3,score=0,tokensCollected=0;
 let isInvincible=false,playerTargetX=0;
@@ -398,213 +1017,211 @@ let tick=0,rafId=null,lastZone=-1;
 
 const $=id=>document.getElementById(id);
 const mileEl=$('mile-val'),speedEl=$('speed-val'),zoneNameEl=$('zone-name'),zoneMsgEl=$('zone-msg');
-const mmFill=$('mini-map-fill'),glitch=$('glitch-overlay'),goScreen=$('game-over'),vicScreen=$('victory');
+const zoneOverlay=$('zone-overlay');
+const mmFill=$('mini-map-fill'),mmDot=$('mini-map-dot');
+const glitch=$('glitch-overlay'),goScreen=$('game-over'),vicScreen=$('victory');
 const speedLines=$('speed-lines'),comboEl=$('combo-disp'),flashEl=$('flash-msg');
-const scoreEl=$('score-val'),tokEl=$('tok-val'),bInner=$('boost-inner'),bRdy=$('boost-rdy');
+const scoreEl=$('score-val'),tokEl=$('tok-val'),bFill=$('boost-fill'),bStatus=$('boost-status');
 const lifeDots=[$('life-1'),$('life-2'),$('life-3')];
+const progressFill=$('progress-fill');
 const allCTAs={};['cta-cost','cta-memory','cta-proof','cta-wallet','cta-passport','cta-escrow','cta-final'].forEach(id=>allCTAs[id]=$(id));
 
-// ─────────────────────────────────────────────
-// AUDIO
-// ─────────────────────────────────────────────
+// Audio
 const aC=new(window.AudioContext||window.webkitAudioContext)();
 const mGain=aC.createGain();mGain.gain.value=0;mGain.connect(aC.destination);
 const resume=()=>{if(aC.state==='suspended')aC.resume();};
-document.addEventListener('click',resume,{once:true});document.addEventListener('touchstart',resume,{once:true});
+
 function tone(freq,type,dur,vol,delay=0){if(!mGain.gain.value)return;const o=aC.createOscillator();const g=aC.createGain();o.connect(g);g.connect(mGain);o.type=type;o.frequency.value=freq;const t=aC.currentTime+delay;g.gain.setValueAtTime(vol,t);g.gain.exponentialRampToValueAtTime(.001,t+dur);o.start(t);o.stop(t+dur);}
 function noise(dur,vol){if(!mGain.gain.value)return;const b=aC.createBuffer(1,aC.sampleRate*dur,aC.sampleRate);const d=b.getChannelData(0);for(let i=0;i<d.length;i++)d[i]=Math.random()*2-1;const s=aC.createBufferSource();const g=aC.createGain();s.buffer=b;s.connect(g);g.connect(mGain);g.gain.setValueAtTime(vol,aC.currentTime);g.gain.exponentialRampToValueAtTime(.001,aC.currentTime+dur);s.start();}
+
 const sfx={
-  collect:()=>{tone(660,'sine',.07,.3);tone(880,'sine',.1,.3,.05);tone(1100,'sine',.14,.25,.1);},
-  miss:()=>{tone(200,'sawtooth',.14,.2);tone(150,'sawtooth',.1,.15,.1);},
-  crash:()=>{noise(.4,.5);tone(80,'square',.3,.3);},
-  boost:()=>{tone(300,'sawtooth',.05,.2);tone(450,'sawtooth',.05,.2,.05);tone(650,'sawtooth',.1,.25,.1);},
-  win:()=>{[523,659,784,1047].forEach((f,i)=>tone(f,'sine',.3,.4,i*.12));[784,1047,1319].forEach((f,i)=>tone(f,'triangle',.4,.3,.6+i*.12));}
+  collect:()=>{tone(660,'sine',.12,.4);tone(880,'sine',.18,.35,.06);tone(1100,'sine',.15,.25,.12);},
+  hit:()=>{noise(.18,.6);tone(110,'sawtooth',.25,.4);},
+  boost:()=>{tone(330,'sawtooth',.08,.3);tone(440,'sawtooth',.12,.25,.06);tone(660,'sine',.2,.2,.12);},
+  zone:()=>{tone(440,'sine',.15,.3);tone(550,'sine',.2,.2,.1);},
+  victory:()=>{[440,550,660,880].forEach((f,i)=>{tone(f,'sine',.3,.4,i*.12);});},
+  death:()=>{noise(.4,.5);tone(110,'sawtooth',.5,.5);}
 };
+
 let audioMode=0,bgmNode=null,bgmGain=null;
-async function initBGM(){if(bgmNode)return;try{const r=await fetch('epshy - Neon Dreams.mp3');const b=await aC.decodeAudioData(await r.arrayBuffer());const s=aC.createBufferSource();s.buffer=b;s.loop=true;bgmGain=aC.createGain();bgmGain.gain.value=0;s.connect(bgmGain);bgmGain.connect(aC.destination);s.start();bgmNode=true;}catch(e){}}
-window.toggleAudio=function(){resume();audioMode=(audioMode+1)%3;const lbs=['♪ OFF','♪ MUSIC','♪ MUSIC+SFX'];$('audio-toggle').textContent=lbs[audioMode];if(audioMode>0&&!bgmNode)initBGM();if(bgmGain)bgmGain.gain.value=audioMode>0?.06:0;mGain.gain.value=audioMode===2?1:0;};
+async function initBGM(){if(bgmNode)return;try{const files=['epshy - Neon Dreams.mp3','Ella Joy Meir - Into the Void.mp3'];const r=await fetch(files[0]);const b=await aC.decodeAudioData(await r.arrayBuffer());const s=aC.createBufferSource();s.buffer=b;s.loop=true;bgmGain=aC.createGain();bgmGain.gain.value=0;s.connect(bgmGain);bgmGain.connect(aC.destination);s.start();bgmNode=true;}catch(e){}}
 
-// ─────────────────────────────────────────────
-// CONTROLS
-// ─────────────────────────────────────────────
-document.addEventListener('keydown',e=>{
-  if(!isPlaying&&!goScreen.classList.contains('show')&&!vicScreen.classList.contains('show')&&(e.key==='Enter'||e.key===' ')){window._tryStart();return;}
-  if(!isPlaying)return;
-  if(e.key==='ArrowLeft'||e.key==='a'||e.key==='A'){e.preventDefault();playerTargetX=Math.max(-5,playerTargetX-2.8);}
-  if(e.key==='ArrowRight'||e.key==='d'||e.key==='D'){e.preventDefault();playerTargetX=Math.min(5,playerTargetX+2.8);}
-  if((e.key===' '||e.key==='Shift')&&!boostActive&&boostCooldown===0)doBoost();
-});
+window.toggleAudio=function(){resume();audioMode=(audioMode+1)%3;const lbs=['♪ OFF','♪ MUSIC','♪ FULL'];$('audio-toggle').textContent=lbs[audioMode];if(audioMode>0&&!bgmNode)initBGM();if(bgmGain)bgmGain.gain.value=audioMode>0?.06:0;mGain.gain.value=audioMode===2?1:0;};
+
+// Input
+const keys={};
+document.addEventListener('keydown',e=>{keys[e.code]=true;if(e.code==='Space'){e.preventDefault();doBoost();}});
+document.addEventListener('keyup',e=>{keys[e.code]=false;});
+
 let txS=0,tyS=0,ttS=0;
-document.addEventListener('touchstart',e=>{
-  if(!isPlaying&&!goScreen.classList.contains('show')&&!vicScreen.classList.contains('show')){window._tryStart();return;}
-  txS=e.touches[0].clientX;tyS=e.touches[0].clientY;ttS=Date.now();
-},{passive:true});
-document.addEventListener('touchmove',e=>{
-  if(!isPlaying)return;e.preventDefault();
-  const dx=e.touches[0].clientX-txS,dy=e.touches[0].clientY-tyS;
-  if(Math.abs(dx)>Math.abs(dy)&&Math.abs(dx)>6){playerTargetX=Math.max(-5,Math.min(5,playerTargetX+(dx/innerWidth)*4.5));txS=e.touches[0].clientX;}
-  if(dy<-40&&Date.now()-ttS<400&&!boostActive&&boostCooldown===0){doBoost();tyS=e.touches[0].clientY;}
-},{passive:false});
+document.addEventListener('touchstart',e=>{resume();txS=e.touches[0].clientX;tyS=e.touches[0].clientY;ttS=Date.now();},{passive:true});
+document.addEventListener('touchmove',e=>{if(!isPlaying)return;const dx=e.touches[0].clientX-txS,dy=e.touches[0].clientY-tyS;if(Math.abs(dx)>18){playerTargetX=Math.max(-4.5,Math.min(4.5,playerTargetX+(dx>0?1.5:-1.5)));txS=e.touches[0].clientX;}},{passive:true});
+document.addEventListener('touchend',e=>{if(Date.now()-ttS<200&&Math.abs(e.changedTouches[0].clientX-txS)<15)doBoost();},{passive:true});
 
-function doBoost(){boostActive=true;boostTimer=BOOST_DUR;targetSpeed=Math.min(1.1,targetSpeed*1.75);speedLines.classList.add('on');sfx.boost();}
+window.moveLeft=()=>{playerTargetX=Math.max(-4.5,playerTargetX-1.5);};
+window.moveRight=()=>{playerTargetX=Math.min(4.5,playerTargetX+1.5);};
 
-// ─────────────────────────────────────────────
-// FLASH & GLITCH
-// ─────────────────────────────────────────────
+function doBoost(){if(!isPlaying||boostCooldown>0||boostActive)return;resume();boostActive=true;boostTimer=BOOST_DUR;targetSpeed=Math.min(1.1,targetSpeed*1.75);speedLines.classList.add('on');sfx.boost();}
+
 function flash(txt,col){if(!flashEl)return;flashEl.style.color=col;flashEl.style.textShadow=`0 0 20px ${col}`;flashEl.textContent=txt;flashEl.style.animation='none';void flashEl.offsetWidth;flashEl.style.animation='flashAnim 1.3s ease forwards';}
-function triggerGlitch(){glitch.style.opacity='.35';setTimeout(()=>glitch.style.opacity='0',160);}
+function triggerGlitch(){glitch.style.opacity='.4';setTimeout(()=>glitch.style.opacity='0',180);}
 
-// ─────────────────────────────────────────────
-// COLLISION & PICKUP
-// ─────────────────────────────────────────────
 function checkAll(){
-  if(isInvincible||!isPlaying)return;
   const px=camera.position.x,pz=camera.position.z;
   for(const e of enemies){
-    if(e.hit)continue;
     const dz=Math.abs(e.z-pz),dx=Math.abs(e.lane-px);
-    if(dz<3.6&&dx<1.5){e.hit=true;takeDamage();return;}
-    if(!e.passed&&e.z>pz-1&&dz<5&&dx>=1.5&&dx<2.4){e.passed=true;score+=50*combo;flash('NEAR MISS! +'+50*combo,'#00ff88');sfx.miss();}
+    if(!e.hit&&dz<1.6&&dx<1.3&&!isInvincible){e.hit=true;takeDamage();blowUp(e.mesh.position.x,e.mesh.position.y,e.mesh.position.z);}
   }
   for(const t of tokens){
-    if(t.collected)continue;
-    if(Math.abs(t.z-pz)<2.5&&Math.abs(t.lane-px)<1.8)pickupToken(t);
+    const dz=Math.abs(t.position.z-pz),dx=Math.abs(t.position.x-px);
+    if(!t.userData.collected&&dz<1.5&&dx<1.4)pickupToken(t);
   }
 }
+
 function pickupToken(t){
-  t.collected=true;t.mesh.visible=false;t.glow.visible=false;
-  tokensCollected++;combo=Math.min(5,combo+1);comboTimer=240;
+  t.userData.collected=true;t.visible=false;if(t.userData.glow)t.userData.glow.visible=false;
+  tokensCollected++;comboTimer=120;combo=Math.min(combo+1,5);
   const pts=100*combo;score+=pts;sfx.collect();
-  flash('◆ '+t.name.toUpperCase()+' +'+pts,'#ffb800');
-  if(tokEl)tokEl.textContent=tokensCollected;
-  window.AgentPayHighway.tokensCollected=tokensCollected;
+  tokEl.textContent=tokensCollected;scoreEl.textContent=score.toLocaleString();
+  flash(`+${pts} ${t.userData.name}`,['#00f0ff','#ff2d95','#ffb800','#00ff88','#8866ff'][tokensCollected%5]);
+  if(combo>1){comboEl.textContent=`×${combo} COMBO`;comboEl.style.opacity='1';setTimeout(()=>comboEl.style.opacity='0',800);}
+  AgentPayHighway.score=score;AgentPayHighway.tokensCollected=tokensCollected;
 }
 
-// ─────────────────────────────────────────────
-// DAMAGE / ENDGAME
-// ─────────────────────────────────────────────
 function blowUp(x,y,z){
   for(let i=0;i<XP_N;i++){xpPos[i*3]=x;xpPos[i*3+1]=y;xpPos[i*3+2]=z;xpVel[i*3]=(Math.random()-.5)*.45;xpVel[i*3+1]=Math.random()*.35;xpVel[i*3+2]=(Math.random()-.5)*.45;}
-  xpGeo.attributes.position.needsUpdate=true;xpMat.opacity=1;xpActive=true;xpTimer=50;
+  xpGeo.attributes.position.needsUpdate=true;xpMat.color.set(0xff2d95);xpActive=true;xpTimer=50;
 }
+
 function takeDamage(){
-  sfx.crash();blowUp(playerCar.position.x,.5,playerCar.position.z);
-  combo=1;lives--;
+  if(isInvincible)return;
+  lives--;sfx.hit();triggerGlitch();
   for(let i=0;i<3;i++){if(i>=lives)lifeDots[i].classList.add('lost');}
-  glitch.style.opacity='.5';glitch.style.background='rgba(255,45,149,.18)';setTimeout(()=>{glitch.style.opacity='0';glitch.style.background='rgba(255,45,149,.05)';},250);
   if(lives<=0){endGame();return;}
   isInvincible=true;let fc=0;
   const fi=setInterval(()=>{playerCar.visible=!playerCar.visible;if(++fc>14){clearInterval(fi);playerCar.visible=true;isInvincible=false;}},140);
-}
-function saveHS(){const prev=parseInt(localStorage.getItem('ap_hw_hs')||'0');if(score>prev){localStorage.setItem('ap_hw_hs',score);return true;}return false;}
-function endGame(){
-  isPlaying=false;if(rafId){cancelAnimationFrame(rafId);rafId=null;}
-  score+=Math.floor(currentMile*50);
-  const rec=saveHS();
-  $('go-score').textContent=score.toLocaleString();$('go-dist').textContent=currentMile.toFixed(1);$('go-tok').textContent=tokensCollected;
-  $('go-rec').style.display=rec?'block':'none';
-  goScreen.classList.add('show');window.AgentPayHighway.isPlaying=false;
-}
-function doVictory(){
-  isPlaying=false;if(rafId){cancelAnimationFrame(rafId);rafId=null;}
-  score+=500+lives*200+tokensCollected*50;sfx.win();
-  const rec=saveHS();
-  $('vs-score').textContent=score.toLocaleString();$('vs-tok').textContent=tokensCollected;$('vs-lives').textContent=lives;
-  $('vs-bonus').textContent='Bonus: +500 finish, +'+(lives*200)+' lives, +'+(tokensCollected*50)+' tokens';
-  $('vs-rec').style.display=rec?'block':'none';
-  vicScreen.classList.add('show');window.AgentPayHighway.isPlaying=false;
+  AgentPayHighway.lives=lives;
 }
 
-// ─────────────────────────────────────────────
-// START
-// ─────────────────────────────────────────────
-function startGame(){
-  if(isPlaying)return;
+function saveHS(){const prev=parseInt(localStorage.getItem('ap_hw_hs')||'0');if(score>prev){localStorage.setItem('ap_hw_hs',score);return true;}return false;}
+
+function endGame(){
+  isPlaying=false;cancelAnimationFrame(rafId);
+  if(rafId)cancelAnimationFrame(rafId);
+  sfx.death();
+  const rec=saveHS();
+  $('go-score').textContent=score.toLocaleString();
+  $('go-mile').textContent=currentMile.toFixed(1);
+  $('go-tok').textContent=tokensCollected;
+  $('go-hs').textContent=parseInt(localStorage.getItem('ap_hw_hs')||'0').toLocaleString();
+  if(rec){$('go-rec').style.display='block';}
+  goScreen.classList.add('show');
+  setTimeout(()=>window._showScrollHint&&window._showScrollHint(),3000);
+}
+
+function doVictory(){
+  isPlaying=false;
+  sfx.victory();
+  const rec=saveHS();
+  $('vs-score').textContent=score.toLocaleString();
+  $('vs-tok').textContent=tokensCollected;
+  $('vs-lives').textContent=lives;
+  if(rec){$('vs-rec').style.display='block';}
+  vicScreen.classList.add('show');
+  setTimeout(()=>window._showScrollHint&&window._showScrollHint(),4000);
+}
+
+window.startGame=function(){
+  resume();
   $('start-screen').style.display='none';
   goScreen.classList.remove('show');vicScreen.classList.remove('show');
-  isPlaying=true;lives=3;score=0;tokensCollected=0;
-  speed=0.28;targetSpeed=0.28;currentMile=0;
-  isInvincible=false;playerTargetX=0;
-  boostActive=false;boostTimer=0;boostCooldown=0;
-  combo=1;comboTimer=0;lastZone=-1;tick=0;
-  camera.position.set(0,3.5,10);
-  playerCar.position.set(0,0,3);playerCar.visible=true;
+  speedLines.classList.remove('on');
+  lives=3;score=0;tokensCollected=0;combo=1;comboTimer=0;
+  speed=0;targetSpeed=0;currentMile=0;tick=0;lastZone=-1;
+  boostActive=false;boostTimer=0;boostCooldown=0;isInvincible=false;playerTargetX=0;
+  AgentPayHighway.isPlaying=true;AgentPayHighway.lives=3;AgentPayHighway.score=0;AgentPayHighway.tokensCollected=0;
+
+  scoreEl.textContent='0';mileEl.textContent='0.0';tokEl.textContent='0';speedEl.textContent='0';
   lifeDots.forEach(d=>d.classList.remove('lost'));
-  if(tokEl)tokEl.textContent='0';if(scoreEl)scoreEl.textContent='0';
-  tokens.forEach(t=>{t.collected=false;t.mesh.visible=true;t.glow.visible=true;});
+  progressFill.style.width='0%';if(mmFill)mmFill.style.width='0%';
+
+  tokens.forEach(t=>{t.userData.collected=false;t.visible=true;if(t.userData.glow)t.userData.glow.visible=true;});
   enemies.forEach((e,i)=>{e.hit=false;e.passed=false;const ls=[-4.5,-1.5,1.5,4.5];e.lane=ls[i%4];e.z=-60-i*28;e.speed=.07+Math.random()*.13;e.mesh.position.set(e.lane,0,e.z);});
-  Object.values(allCTAs).forEach(el=>{if(el)el.style.display='none';});
-  speedLines.classList.remove('on');comboEl.style.opacity='0';
-  window.AgentPayHighway.isPlaying=true;window.AgentPayHighway.lives=3;window.AgentPayHighway.score=0;window.AgentPayHighway.tokensCollected=0;
-  document.body.style.cursor='none';
-  if(rafId)cancelAnimationFrame(rafId);
+
+  camera.position.set(0,3.5,10);playerCar.position.set(0,0,0);
+  isPlaying=true;
+  if(bgmGain&&audioMode>0)bgmGain.gain.value=.06;
+
   let _lastTs=0;
   function _loop(ts){if(!isPlaying)return;if(ts-_lastTs>=32){_lastTs=ts;gameTick();}rafId=requestAnimationFrame(_loop);}
   rafId=requestAnimationFrame(_loop);
-}
-window.startGame=startGame;
-$('go-restart').addEventListener('click',startGame);
-$('vs-restart').addEventListener('click',startGame);
-$('start-screen').addEventListener('click',startGame);
-$('start-screen').addEventListener('touchend',e=>{e.preventDefault();startGame();});
+  requestAnimationFrame(()=>renderer.render(scene,camera));
+};
 
-// ─────────────────────────────────────────────
-// GAME LOOP
-// ─────────────────────────────────────────────
 function gameTick(){
-  if(!isPlaying)return;
-  tick++;const now=Date.now();
+  tick++;
+  if(keys['ArrowLeft']||keys['KeyA'])playerTargetX=Math.max(-4.5,playerTargetX-.12);
+  if(keys['ArrowRight']||keys['KeyD'])playerTargetX=Math.min(4.5,playerTargetX+.12);
+  playerCar.position.x+=(playerTargetX-playerCar.position.x)*.14;
+  camera.position.x=playerCar.position.x*.7;
 
-  // Player X
-  camera.position.x+=(playerTargetX-camera.position.x)*.1;
-  playerCar.position.x=camera.position.x;
-  playerCar.position.z=camera.position.z-7; // always 7 units ahead
+  if(boostActive){boostTimer--;if(boostTimer<=0){boostActive=false;boostCooldown=BOOST_CD;speedLines.classList.remove('on');}}
+  if(boostCooldown>0){boostCooldown--;const pct=(1-boostCooldown/BOOST_CD)*100;if(bFill)bFill.style.width=pct+'%';if(bStatus)bStatus.textContent=pct>=100?'READY ▲':Math.ceil((boostCooldown/60)*10)/10+'s';}
+  else{if(bFill)bFill.style.width='100%';if(bStatus)bStatus.textContent='READY ▲';}
 
-  // Boost
-  if(boostActive){
-    boostTimer--;
-    if(boostTimer<=0){boostActive=false;boostCooldown=BOOST_CD;targetSpeed=Math.max(.3,targetSpeed/1.75);speedLines.classList.remove('on');}
-    bInner.style.background='var(--amber)';bInner.style.width=(boostTimer/BOOST_DUR*100)+'%';bRdy.textContent='BOOSTING...';bRdy.style.color='var(--amber)';
-  }else if(boostCooldown>0){
-    boostCooldown--;const pct=(1-boostCooldown/BOOST_CD)*100;
-    bInner.style.background='var(--dim)';bInner.style.width=pct+'%';bRdy.textContent=boostCooldown>0?'RECHARGING...':'[ SPACE ] READY';bRdy.style.color=boostCooldown>0?'var(--dim)':'var(--amber)';
-  }else{bInner.style.background='var(--amber)';bInner.style.width='100%';bRdy.textContent='[ SPACE ] READY';bRdy.style.color='var(--amber)';}
+  if(comboTimer>0){comboTimer--;}else{combo=1;}
 
-  // Combo decay
-  if(combo>1){if(--comboTimer<=0){combo=1;comboEl.style.opacity='0';}else{comboEl.textContent='x'+combo+' COMBO';comboEl.style.opacity='1';}}
+  targetSpeed=Math.min(.95,targetSpeed+.002);speed+=(targetSpeed-speed)*.04;
+  if(boostActive)speed=Math.min(1.1,speed*1.01);
 
-  // Speed ramp
-  speed+=(targetSpeed-speed)*.025;
-  if(tick%200===0&&targetSpeed<.7)targetSpeed+=.015;
+  const camDelta=speed*1.85;
+  camera.position.z-=camDelta;
+  playerCar.position.z=camera.position.z-3.5;
 
-  // Move forward
-  camera.position.z-=speed;
-  currentMile=Math.abs(camera.position.z-10)/30;
-  if(currentMile>=10.05){doVictory();return;}
+  currentMile=Math.max(0,(-(camera.position.z-10))/30);
+  AgentPayHighway.currentMile=currentMile;AgentPayHighway.speed=speed;
 
-  score++;if(scoreEl)scoreEl.textContent=score;
+  const mph=Math.round(speed*220);
+  if(speedEl)speedEl.textContent=mph;
+  if(mileEl)mileEl.textContent=currentMile.toFixed(1);
+  if(scoreEl)scoreEl.textContent=score.toLocaleString();
+
+  const pct=Math.min(100,(currentMile/10)*100);
+  if(progressFill)progressFill.style.width=pct+'%';
+  if(mmFill)mmFill.style.width=pct+'%';
+  if(mmDot)mmDot.style.left=pct+'%';
+
+  // Zone detection
+  const zone=zones.find(z=>Math.abs(z.mile-currentMile)<.45);
+  if(zone){
+    const zi=zones.indexOf(zone);
+    if(zi!==lastZone){
+      lastZone=zi;scene.fog.color.set(zone.fog||0x06060f);
+      zoneOverlay.style.color='#'+new THREE.Color(zone.color).getHexString();
+      zoneNameEl.textContent=zone.name;zoneMsgEl.textContent=zone.msg;
+      zoneOverlay.style.opacity='1';
+      sfx.zone();
+      setTimeout(()=>zoneOverlay.style.opacity='0',2800);
+    }
+  }
+
+  // Billboard CTAs
+  Object.keys(allCTAs).forEach(id=>{
+    const el=allCTAs[id];if(!el)return;
+    const z=zones.find(z=>z.cta===id);
+    const show=z&&Math.abs(currentMile-z.mile)<.55;
+    if(show&&el.style.display==='none'){el.style.display='block';el.style.position='absolute';el.style.left='50%';el.style.top='78%';el.style.transform='translate(-50%,-50%)';}
+    else if(!show)el.style.display='none';
+  });
 
   // Enemies
-  enemies.forEach(e=>{
-    if(e.hit)return;
-    e.z+=speed+e.speed;e.mesh.position.z=e.z;
-    if(e.z>camera.position.z+12){
-      e.hit=false;e.passed=false;
-      const ls=[-4.5,-1.5,1.5,4.5];e.lane=ls[Math.floor(Math.random()*4)];
-      e.z=camera.position.z-60-Math.random()*220;
-      e.speed=.07+Math.random()*.13;
-      e.mesh.position.set(e.lane,0,e.z);
-    }
-  });
+  for(const e of enemies){
+    e.z+=camDelta*.4;e.mesh.position.z=e.z;
+    if(e.z>camera.position.z+8&&!e.passed){e.passed=true;const ls=[-4.5,-1.5,1.5,4.5];e.lane=ls[Math.floor(Math.random()*4)];e.z=camera.position.z-60-Math.random()*30;e.hit=false;e.mesh.position.set(e.lane,0,e.z);}
+  }
 
-  checkAll();
-
-  // Tokens bob+spin
-  tokens.forEach(t=>{
-    if(t.collected)return;
-    t.mesh.position.y=1.1+Math.sin(now*.002+t.phase)*.28;t.mesh.rotation.y+=.04;
-    t.glow.position.copy(t.mesh.position);
-  });
+  // Tokens spin
+  tokens.forEach((t,i)=>{if(!t.userData.collected){t.rotation.y+=.04;t.rotation.x+=.02;}});
 
   // Exhaust
   const ep=exhaust.geometry.attributes.position.array;
@@ -615,46 +1232,56 @@ function gameTick(){
   // Explosion
   if(xpActive){const xp=xpGeo.attributes.position.array;for(let i=0;i<XP_N;i++){xp[i*3]+=xpVel[i*3];xp[i*3+1]+=xpVel[i*3+1];xp[i*3+2]+=xpVel[i*3+2];xpVel[i*3+1]-=.008;}xpGeo.attributes.position.needsUpdate=true;xpMat.opacity=--xpTimer/50;if(xpTimer<=0)xpActive=false;}
 
-  // Scene
-  neonLights.forEach((l,i)=>l.intensity=1.5+Math.sin(now*.003+i*.5)*.7);
-  poles.forEach(p=>p.pl.intensity=.5+Math.sin(now*.003+p.phase)*.3);
-
   // Stars scroll
   for(let i=0;i<STAR_N;i++){sPos[i*3+2]+=speed*.12;if(sPos[i*3+2]>20)sPos[i*3+2]=-360;}
-  stars.geometry.attributes.position.needsUpdate=true;
+  sGeo.attributes.position.needsUpdate=true;
 
-  // HUD
-  if(mileEl)mileEl.textContent=currentMile.toFixed(1);
-  if(speedEl)speedEl.textContent=Math.floor(speed*200+(boostActive?55:0));
-  const pct=Math.min(100,(currentMile/10)*100);
-  if(mmFill){mmFill.style.width=pct+'%';mmFill.style.background=currentMile>8?'#ff2d95':currentMile>5?'#ffb800':'#00f0ff';}
+  // Pole flicker
+  poles.forEach((p,i)=>{p.pl.intensity=.4+Math.sin(tick*.1+p.phase)*0.25;});
 
-  // Zones
-  const zone=zones.find(z=>Math.abs(z.mile-currentMile)<.45);
-  if(zone&&zone.mile!==lastZone){
-    if(zoneNameEl){zoneNameEl.textContent=zone.name;zoneNameEl.style.opacity='1';}
-    if(zoneMsgEl){zoneMsgEl.textContent=zone.msg;zoneMsgEl.style.opacity='1';}
-    if(zone.fog)scene.fog.color.setHex(zone.fog);
-    triggerGlitch();lastZone=zone.mile;
-    setTimeout(()=>{if(zoneNameEl)zoneNameEl.style.opacity='.5';if(zoneMsgEl)zoneMsgEl.style.opacity='.5';},3500);
-  }
+  checkAll();
 
-  // CTAs
-  Object.keys(allCTAs).forEach(id=>{const el=allCTAs[id];if(!el)return;const z=zones.find(z=>z.cta===id);el.style.display=(z&&Math.abs(currentMile-z.mile)<.55)?'block':'none';});
-
-  window.AgentPayHighway.currentMile=currentMile;window.AgentPayHighway.speed=speed;window.AgentPayHighway.lives=lives;window.AgentPayHighway.score=score;
-
-  camera.lookAt(camera.position.x,2.2,camera.position.z-32);
+  if(currentMile>=10){doVictory();return;}
   renderer.render(scene,camera);
 }
 
+// Render loop for start screen
+let startRaf;
+(function startRender(){startRaf=requestAnimationFrame(startRender);renderer.render(scene,camera);})();
+window.startGame=function(){
+  cancelAnimationFrame(startRaf);
+  const origStart=window.startGame;
+  resume();
+  $('start-screen').style.display='none';
+  goScreen.classList.remove('show');vicScreen.classList.remove('show');
+  speedLines.classList.remove('on');
+  lives=3;score=0;tokensCollected=0;combo=1;comboTimer=0;
+  speed=0;targetSpeed=0;currentMile=0;tick=0;lastZone=-1;
+  boostActive=false;boostTimer=0;boostCooldown=0;isInvincible=false;playerTargetX=0;
+  AgentPayHighway.isPlaying=true;AgentPayHighway.lives=3;AgentPayHighway.score=0;AgentPayHighway.tokensCollected=0;
+
+  scoreEl.textContent='0';mileEl.textContent='0.0';tokEl.textContent='0';speedEl.textContent='0';
+  lifeDots.forEach(d=>d.classList.remove('lost'));
+  progressFill.style.width='0%';if(mmFill)mmFill.style.width='0%';
+
+  tokens.forEach(t=>{t.userData.collected=false;t.visible=true;if(t.userData.glow)t.userData.glow.visible=true;});
+  enemies.forEach((e,i)=>{e.hit=false;e.passed=false;const ls=[-4.5,-1.5,1.5,4.5];e.lane=ls[i%4];e.z=-60-i*28;e.speed=.07+Math.random()*.13;e.mesh.position.set(e.lane,0,e.z);});
+
+  camera.position.set(0,3.5,10);playerCar.position.set(0,0,0);
+  isPlaying=true;
+  if(bgmGain&&audioMode>0)bgmGain.gain.value=.06;
+
+  let _lastTs=0;
+  function _loop(ts){if(!isPlaying)return;if(ts-_lastTs>=32){_lastTs=ts;gameTick();}rafId=requestAnimationFrame(_loop);}
+  rafId=requestAnimationFrame(_loop);
+};
+
 window.addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight);});
-window._autoStartWhenReady();
+if(window._startQueued){window.startGame();}
 
-console.log('🛣️  AgentPay Highway v3.0');
-console.log('🎮  ←→ dodge | SPACE boost | collect ◆ tokens | reach mile 10 to win');
-console.log('🤖  window.AgentPayHighway API v3 ready');
-
+}).catch(err=>{
+  console.error('Three.js load failed:',err);
+  document.getElementById('game-section').innerHTML='<div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;background:#06060f;color:#00f0ff;text-align:center;padding:2rem"><h1 style="margin-bottom:1rem">⬡ ENGINE FAILED</h1><p style="color:#4a4a6a;margin-bottom:1rem">Three.js could not load. Check your connection.</p><button onclick="location.reload()" style="padding:.7rem 2rem;background:transparent;border:1px solid #00f0ff;color:#00f0ff;cursor:pointer;font-family:monospace;border-radius:6px">⟳ RELOAD</button></div>';
 });
 </script>
 </body>
